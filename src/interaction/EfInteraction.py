@@ -24,6 +24,8 @@ class EfInteraction(PostMessageInteraction):
         self.cursor_position = None
 
     def click(self, x=-1, y=-1, move_back=False, name=None, down_time=0.01, move=True, key="left"):
+        self.try_activate()
+        move_Cursor = False
         if x < 0:
             click_pos = win32api.MAKELONG(round(self.capture.width * 0.5), round(self.capture.height * 0.5))
         else:
@@ -31,6 +33,7 @@ class EfInteraction(PostMessageInteraction):
             abs_x, abs_y = self.capture.get_abs_cords(x, y)
             click_pos = win32api.MAKELONG(x, y)
             win32api.SetCursorPos((abs_x, abs_y))
+            move_Cursor = True
             time.sleep(0.001)
         if key == "left":
             btn_down = win32con.WM_LBUTTONDOWN
@@ -46,10 +49,11 @@ class EfInteraction(PostMessageInteraction):
             btn_up = win32con.WM_RBUTTONUP
         self.post(btn_down, btn_mk, click_pos
                   )
+        time.sleep(down_time)
         self.post(btn_up, 0, click_pos
                   )
-        time.sleep(down_time)
-        if x >= 0:
+        if x >= 0 and move_Cursor:
+            time.sleep(0.01)
             SetCursorPos(self.cursor_position)
 
     def send(self, msg, wparam, lparam):
