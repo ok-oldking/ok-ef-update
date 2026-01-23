@@ -24,7 +24,7 @@ class AutoSkipDialogTask(BaseEfTask, TriggerTask):
            while time.time() - start < 1:
                confirm = self.find_confirm()
                if confirm:
-                   self.click(confirm)
+                   self.click(confirm, after_sleep=0.1)
                    clicked_confirm = True
                elif clicked_confirm:
                    self.log_debug('AutoSkipDialogTask no confirm break')
