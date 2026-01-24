@@ -44,14 +44,16 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
         while True:
             skill_count = self.get_skill_bar_count()
             if skill_count < 0:
-                self.log_info("自动战斗结束!", notify=self.config.get("后台结束战斗通知") and self.in_bg())
                 if self.debug:
                     self.screenshot('out_of_combat')
                 if self.wait_in_combat(click=True, time_out=1):
                     self.log_debug('re-enter combat')
                     self.click(key='middle')
                     continue
-                break
+                else:
+                    self.log_info("自动战斗结束!", notify=self.config.get("后台结束战斗通知") and self.in_bg())
+                    self.screenshot('re_enter_combat_fail')
+                    break
             elif self.use_e_skill():
                 continue
             elif self.use_ult():
@@ -122,7 +124,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
                 self.send_key_down(ult)
                 self.wait_until(lambda :not self.in_combat())
                 self.send_key_up(ult)
-                self.wait_in_combat(time_out=6)
+                self.wait_in_combat(time_out=8)
                 return True
 
     def wait_in_combat(self, time_out=3, click=False):
@@ -149,10 +151,11 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
 
     def get_skill_bar_count(self):
 
-        skill_area = self.frame[self.height_of_screen(1943 / 2160):self.height_of_screen(1983 / 2160),
-              self.width_of_screen(1597 / 3840):self.width_of_screen(2259 / 3840)]
+        skill_area = self.frame[self.height_of_screen(1940 / 2160):self.height_of_screen(1983 / 2160),
+              self.width_of_screen(1586 / 3840):self.width_of_screen(2266 / 3840)]
         # self.screenshot('skill_area', frame=skill_area)
         if not has_rectangles(skill_area):
+            # logger.debug('no rectangles found')
             return -1
 
         count = 0
@@ -220,50 +223,65 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
 
         return False
 
+
 def has_rectangles(frame):
     """
-    Analyzes an OpenCV frame to look for 3 bars and count how many are yellow.
+    Detects if there is a bar structure in the frame by strictly looking for rectangular
+    shapes/edges, regardless of color (White, Yellow, Dark Gray).
 
-    Args:
-        frame: A numpy array representing the image (BGR format).
-
-    Returns:
-        int: -1 if the 3-bar structure is not found.
-             0-3 indicating the number of fully charged (yellow) bars.
+    Optimized for small/low-res UI elements (e.g. 120x8 pixels).
     """
-
-    # 1. PRE-PROCESSING FOR STRUCTURE DETECTION
     if frame is None:
-        return -1
+        return False
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    original_h, original_w = frame.shape[:2]
 
-    # 2. DETECTING THE UI ELEMENTS (BARS)
-    # Apply GaussianBlur to reduce noise
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # 1. UPSCALE THE IMAGE
+    # Small UI elements (8px high) are too small for standard edge detection kernels.
+    # We upscale by 4x to make borders distinct (1px border becomes 4px).
+    scale_factor = 4
+    resized = cv2.resize(frame, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_CUBIC)
 
-    # Canny edge detection
-    edges = cv2.Canny(blurred, 50, 150)
+    # 2. PRE-PROCESSING
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
 
-    # Find contours
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # 3. EDGE DETECTION (Canny)
+    # Using Canny is safer than Thresholding here because "Dark Gray" bars
+    # might have the same brightness as the background, but they usually have a BORDER.
+    # Canny detects the border.
+    # We use relatively low thresholds to catch faint borders of empty bars.
+    edges = cv2.Canny(gray, 50, 100)
 
-    potential_bars = []
+    # 4. MORPHOLOGICAL CLOSING
+    # This connects the top and bottom borders of the bar into a single solid block.
+    # Because we upscaled by 4, we can use a larger kernel to bridge gaps.
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    closed_edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
+
+    # 5. FIND CONTOURS
+    contours, _ = cv2.findContours(closed_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Calculate target minimum width (25% of the scaled width)
+    min_width = (original_w * scale_factor) * 0.25
 
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
 
-        # Filter noise: Minimum size check
-        if w < 20 or h < 5:
+        # CHECK: Width
+        if w < min_width:
             continue
 
-        # Aspect Ratio Check: The bars are rectangles (wider than tall)
-        aspect_ratio = float(w) / h
-        if 2.5 < aspect_ratio < 15.0:
-            potential_bars.append((x, y, w, h))
+        # CHECK: Aspect Ratio
+        # A bar must be wider than it is tall.
+        if w > h:
+            # CHECK: Solidity/Noise
+            # Ensure it's not a thin horizontal noise line.
+            # Since we upscaled by 4, a real bar should be at least ~10px tall in the upscaled image
+            # (which corresponds to 2.5px in the original).
+            if h > 10:
+                return True
 
-    if len(potential_bars) >= 1:
-        return True
+    return False
 
 yellow_skill_color = {
     'r': (230, 255),  # Red range
