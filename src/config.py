@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.15"
+version = "v0.0.18"
 #不需要修改version, Github Action打包会自动修改
 
 key_config_option = ConfigOption('Game Hotkey Config', { #全局配置示例
@@ -93,7 +93,16 @@ config = {
                 'share': 'Download from https://github.com/ok-oldking/ok-end-field',
                 'faq': 'https://github.com/ok-oldking/ok-end-field',
                 'qq_channel': 'https://pd.qq.com/s/djmm6l44y',
-            }
+            },
+            'zh_CN': {
+                'github': 'https://github.com/ok-oldking/ok-end-field',
+                'discord': 'https://discord.gg/vVyCatEBgA',
+                'sponsor': 'https://afdian.com/a/ok-oldking',
+                'share': 'OK-WW 夸克网盘下载：https://pan.quark.cn/s/75b55ef72a34 GitHub下载: https://github.com/ok-oldking/ok-end-field',
+                'faq': 'https://cnb.cool/ok-oldking/ok-ef-update/-/blob/main/README.md',
+                'qq_group': 'https://qm.qq.com/q/NcWHQU6q8k',
+                'qq_channel': 'https://pd.qq.com/s/djmm6l44y',
+            },
         },
     'screenshots_folder': "screenshots", #截图存放目录, 每次重新启动会清空目录
     'gui_title': 'ok-ef',  #窗口名
