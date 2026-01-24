@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.22"
+version = "v0.0.23"
 #不需要修改version, Github Action打包会自动修改
 
 key_config_option = ConfigOption('Game Hotkey Config', { #全局配置示例
@@ -121,5 +121,6 @@ config = {
     'trigger_tasks':[ # 不断执行的触发式任务
         ["src.tasks.AutoCombatTask", "AutoCombatTask"],
         ["src.tasks.AutoSkipDialogTask", "AutoSkipDialogTask"],
+        ["src.tasks.AutoPickTask", "AutoPickTask"],
     ]
 }

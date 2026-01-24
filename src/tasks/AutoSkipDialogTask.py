@@ -18,17 +18,15 @@ class AutoSkipDialogTask(BaseEfTask, TriggerTask):
 
     def run(self):
         if self.find_one('skip_dialog_esc', horizontal_variance=0.05):
-           self.send_key('esc', after_sleep=0.1)
-           start = time.time()
-           clicked_confirm = False
-           while time.time() - start < 1:
-               confirm = self.find_confirm()
-               if confirm:
-                   self.click(confirm, after_sleep=0.1)
-                   clicked_confirm = True
-               elif clicked_confirm:
-                   self.log_debug('AutoSkipDialogTask no confirm break')
-                   break
-               self.next_frame()
-
-
+            self.send_key('esc', after_sleep=0.1)
+            start = time.time()
+            clicked_confirm = False
+            while time.time() - start < 1:
+                confirm = self.find_confirm()
+                if confirm:
+                    self.click(confirm, after_sleep=0.2)
+                    clicked_confirm = True
+                elif clicked_confirm:
+                    self.log_debug('AutoSkipDialogTask no confirm break')
+                    break
+                self.next_frame()

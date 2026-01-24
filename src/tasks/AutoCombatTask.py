@@ -43,11 +43,11 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
         self.click(key='middle')
         while True:
             skill_count = self.get_skill_bar_count()
-            if skill_count < 0 and self.ocr_lv():
+            if skill_count < 0 and (self.ocr_lv() or not self.in_team()):
                 if self.debug:
                     self.screenshot('out_of_combat')
-                    self.log_info("自动战斗结束!", notify=self.config.get("后台结束战斗通知") and self.in_bg())
-                    break
+                self.log_info("自动战斗结束!", notify=self.config.get("后台结束战斗通知") and self.in_bg())
+                break
             elif self.use_e_skill():
                 continue
             elif self.use_ult():
@@ -87,10 +87,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
                             self.click(after_sleep=0.1)
                         self.next_frame()
             else:
-                if key:=self.config.get("攻击快捷键"):
-                    self.send_key(key, after_sleep=0.3)
-                else:
-                    self.click(after_sleep=0.5)
+                self.click(after_sleep=0.3)
             self.sleep(0.01)
 
     def _parse_skill_sequence(self, raw_config: str) -> list[str]:
@@ -116,7 +113,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
         for ult in ults:
             if self.find_one("ult_" + ult):
                 self.send_key_down(ult)
-                self.wait_until(lambda :not self.in_combat())
+                self.wait_until(lambda: not self.in_combat())
                 self.send_key_up(ult)
                 self.wait_in_combat(time_out=8)
                 return True
@@ -132,13 +129,13 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
                 self.sleep(0.1)
 
     def ocr_lv(self):
-        lv = self.ocr(0.02, 0.89, 0.23,0.93,
-                       match=self.lv_regex, name='lv_text')
+        lv = self.ocr(0.02, 0.89, 0.23, 0.93,
+                      match=self.lv_regex, name='lv_text')
         # logger.debug('lvs {}'.format(lv))
         if len(lv) > 0:
             return True
-        lv = self.ocr(0.02, 0.89, 0.23,0.93, frame_processor=isolate_white_text_to_black,
-                       match=self.lv_regex, name='lv_text')
+        lv = self.ocr(0.02, 0.89, 0.23, 0.93, frame_processor=isolate_white_text_to_black,
+                      match=self.lv_regex, name='lv_text')
         if len(lv) > 0:
             return True
 
@@ -152,12 +149,13 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
         return self.get_skill_bar_count() >= required_yellow and self.in_team() and not self.ocr_lv()
 
     def in_team(self):
-        return self.find_one('skill_1') and self.find_one('skill_2') and self.find_one('skill_3') and self.find_one('skill_4')
+        return self.find_one('skill_1') and self.find_one('skill_2') and self.find_one('skill_3') and self.find_one(
+            'skill_4')
 
     def get_skill_bar_count(self):
 
         skill_area = self.frame[self.height_of_screen(1940 / 2160):self.height_of_screen(1983 / 2160),
-              self.width_of_screen(1586 / 3840):self.width_of_screen(2266 / 3840)]
+                     self.width_of_screen(1586 / 3840):self.width_of_screen(2266 / 3840)]
         # self.screenshot('skill_area', frame=skill_area)
         if not has_rectangles(skill_area):
             # logger.debug('no rectangles found')
@@ -174,7 +172,8 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
                     count += 1
         if count == 0:
             # self.log_debug('count is 0, check left white')
-            has_white_left = self.check_is_pure_color_in_4k(1604, y_start, 1614, y_end, white_skill_color, threshold=0.1)
+            has_white_left = self.check_is_pure_color_in_4k(1604, y_start, 1614, y_end, white_skill_color,
+                                                            threshold=0.1)
             if not has_white_left:
                 count = -1
         return count
@@ -288,8 +287,10 @@ def has_rectangles(frame):
 
     return False
 
+
 lower_white_none_inclusive = np.array([222, 222, 222], dtype=np.uint8)
 black = np.array([0, 0, 0], dtype=np.uint8)
+
 
 def isolate_white_text_to_black(cv_image):
     """
@@ -305,6 +306,7 @@ def isolate_white_text_to_black(cv_image):
 
     return output_image
 
+
 yellow_skill_color = {
     'r': (230, 255),  # Red range
     'g': (180, 255),  # Green range
@@ -316,5 +318,3 @@ white_skill_color = {
     'g': (190, 255),  # Green range
     'b': (190, 255)  # Blue range
 }
-
-

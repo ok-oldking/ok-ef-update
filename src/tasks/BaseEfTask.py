@@ -18,6 +18,12 @@ class BaseEfTask(BaseTask):
     def find_confirm(self):
         return self.find_one('skip_dialog_confirm', horizontal_variance=0.05, vertical_variance=0.05)
 
+    def in_world(self):
+        return self.find_one('top_left_tab')
+
+    def find_f(self):
+        return self.find_one('pick_f', vertical_variance=0.05)
+
     # def click(self, x=-1, y=-1, move_back=False, name=None, down_time=0.02, move=True, key="left", after_sleep=0.01):
     #     self.executor.interaction.operate(lambda: self.do_click(x, y, down_time=down_time, key=key), block=True)
     #     self.sleep(after_sleep)
