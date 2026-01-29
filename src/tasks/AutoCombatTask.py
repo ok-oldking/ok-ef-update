@@ -110,7 +110,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
     def perform_attack_weave(self):
         """Performs a normal attack if the 0.3s operation interval permits."""
         if time.time() - self.last_op_time > 0.3:
-            self.click()
+            self.click(move=False)
             self.last_op_time = time.time()
 
     def _parse_skill_sequence(self, raw_config: str) -> list[str]:

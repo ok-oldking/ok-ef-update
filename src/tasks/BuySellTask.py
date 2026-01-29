@@ -14,11 +14,11 @@ class BuySellTask(BaseEfTask):
         self.icon = FluentIcon.SYNC
         self.default_config.update({
             '囤货价格折扣百分比': 20,
-            '出售价格利润百分比': 300,
+            '出售价格利润百分比': 180,
         })
 
     def run(self):
-        self.buy()
+        self.sell()
         return
         self.ensure_main()
         self.send_key('y')
@@ -46,9 +46,27 @@ class BuySellTask(BaseEfTask):
                         highest_box = price
         if highest_margin > self.config.get('囤货价格折扣百分比'):
             self.log_info(f'highest margin {highest_margin} > {self.config.get("囤货价格折扣百分比")}')
-            self.click(highest_box, after_sleep=1)
-            self.click(0.53, 0.68, after_sleep=0.5)
-            self.click(0.83, 0.79, after_sleep=1)
+            self.click(highest_box, down_time=0.02, after_sleep=1)
+            self.click(0.52, 0.70, vcenter=True, down_time=0.02, hcenter=True, after_sleep=0.5)
+            self.click(0.83, 0.82, vcenter=True, down_time=0.02, hcenter=True, after_sleep=1)
+            self.click(0.49, 0.91, vcenter=True, down_time=0.02, hcenter=True, after_sleep=1)
+
+    def sell(self):
+        own_box = self.box_of_screen(0.06, 0.30, 0.97, 0.62)
+        owns = self.ocr(box=own_box, match=re.compile('%'))
+        for own in owns:
+            self.click(own, after_sleep=1)
+            self.click(0.76, 0.65, after_sleep=2)
+            highest_price = self.wait_ocr(0.75, 0.38, 0.83, 0.47, match=re.compile('%'), raise_if_not_found=True)
+            price_int = parse_rounded_int(highest_price[0].name)
+            self.log_info(f'highest_price {price_int} {self.config.get("出售价格利润百分比")}')
+            if price_int < self.config.get('出售价格利润百分比'):
+                self.send_key('esc', after_sleep=0.5)
+                self.send_key('esc', after_sleep=2)
+                continue
+            else:
+                self.click(0.39, 0.43, after_sleep=0.5)
+                self.click(0.45, 0.48, after_sleep=0.5)
 
 
 def parse_rounded_int(text):
