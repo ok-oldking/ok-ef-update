@@ -57,8 +57,11 @@ class BaseEfTask(BaseTask):
             elif self.find_one('monthly_card') or self.find_one('logout'):
                 self.click(after_sleep=1)
                 return False
-            elif close := (self.find_one('check_in_close', threshold=0.75) or self.find_one(
-                    'reward_ok') or self.find_one(
-                'one_click_claim')):
+            elif close := (self.find_one(
+                    'reward_ok', horizontal_variance=0.1, vertical_variance=0.1, ) or self.find_one(
+                'one_click_claim', horizontal_variance=0.1, vertical_variance=0.1) or self.find_one('check_in_close',
+                                                                                                    horizontal_variance=0.1,
+                                                                                                    vertical_variance=0.1,
+                                                                                                    threshold=0.75)):
                 self.click(close, after_sleep=1)
                 return False
