@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.42"
+version = "v0.0.43"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -102,7 +102,7 @@ config = {
     'screenshots_folder': "screenshots",  # 截图存放目录, 每次重新启动会清空目录
     'gui_title': 'ok-ef',  # 窗口名
     'template_matching': {  # 可选, 如使用OpenCV的模板匹配
-        'coco_feature_json': os.path.join('assets', 'result.json'),
+        'coco_feature_json': os.path.join('assets', 'coco_detection.json'),
         # coco格式标记, 需要png图片, 在debug模式运行后, 会对进行切图仅保留被标记部分以减少图片大小
         'default_horizontal_variance': 0.002,  # 默认x偏移, 查找不传box的时候, 会根据coco坐标, match偏移box内的
         'default_vertical_variance': 0.002,  # 默认y偏移
@@ -114,6 +114,7 @@ config = {
     'my_app': ['src.globals', 'Globals'],  # 可选. 全局单例对象, 可以存放加载的模型, 使用og.my_app调用
     'onetime_tasks': [  # 用户点击触发的任务
         ["src.tasks.DailyTask", "DailyTask"],
+        ["src.tasks.TakeDeliveryTask", "TakeDeliveryTask"],
         # ["src.tasks.BuySellTask", "BuySellTask"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
     ],
@@ -121,6 +122,6 @@ config = {
         ["src.tasks.AutoCombatTask", "AutoCombatTask"],
         ["src.tasks.AutoSkipDialogTask", "AutoSkipDialogTask"],
         ["src.tasks.AutoPickTask", "AutoPickTask"],
-        ["src.tasks.AutoLoginTask", "AutoLoginTask"],
+        ["src.tasks.AutoLoginTask", "AutoLoginTask"]
     ]
 }
