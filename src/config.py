@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.44"
+version = "v0.0.45"
 
 
 # 不需要修改version, Github Action打包会自动修改
