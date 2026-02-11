@@ -28,8 +28,10 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
         self.default_config = {
             '接取谷地券': False,
             '接取谷地券最低金额(万)': 5.0,
+            '接取谷地券最高金额(万)': 40.0,
             '接取武陵券': True,
-            '接取武陵券最低金额(万)': 5.0
+            '接取武陵券最低金额(万)': 5.0,
+            '接取武陵券最高金额(万)': 15.0
         }
 
     def process_ocr_results(self, full_texts, filter_min, reward_pattern):
@@ -60,21 +62,33 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
                         pass
         return rewards, accept_btns, refresh_btn
 
-    def detect_ticket_type(self, reward_obj, ticket_types):
+    def detect_ticket_type(self, reward_obj, ticket_types, y_ceiling):
         """
-        根据报酬文本的位置，推算图标区域，并尝试识别券种。
+        根据报酬文本的位置，推算图标区域。
+        新增 y_ceiling 参数：限制搜索框的顶部边界，防止覆盖到上一行。
         """
+        # 保持较大的搜索范围设置，以适应高分辨率
         search_hw_ratio = 3.6
         search_h_ratio = 2.4
-
-        min_box_size = 70
+        min_box_size = 110 # 保持这个较大的值以兼容 2K/4K
 
         search_width = max(reward_obj.height * search_hw_ratio, min_box_size)
         search_height = max(reward_obj.height * search_h_ratio, min_box_size)
 
         x_offset_val = (reward_obj.width / 2) - (search_width / 2)
-        y_offset_val = -search_height
+
+        # 原始计算的顶部 Y 坐标
+        target_y = reward_obj.y - search_height
+
+        # 【关键修复】如果计算出的顶部超过了天花板（上一行），就强制压回
+        if target_y < y_ceiling:
+            # 调整高度，使顶部刚好顶着天花板，而不是伸过去
+            # 此时 height 变小，可能导致崩溃，所以下面要加 try-catch
+            search_height = reward_obj.y - y_ceiling
+            target_y = y_ceiling
+
         target_real_height = search_height + reward_obj.height * 0.5
+        y_offset_val = target_y - reward_obj.y # 重新计算相对位移
 
         icon_search_box = reward_obj.copy(
             x_offset = x_offset_val,
@@ -91,10 +105,16 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
             icon_search_box.width += icon_search_box.x
             icon_search_box.x = 0
 
-        found_ticket = self.find_feature(ticket_types, box=icon_search_box)
-        if found_ticket:
-             # 如果返回的是列表，取第一个
-            return found_ticket[0] if isinstance(found_ticket, list) else found_ticket
+        # 【防崩溃】如果盒子被压得太扁（小于模板），find_feature 会抛出异常
+        try:
+            found_ticket = self.find_feature(ticket_types, box=icon_search_box)
+            if found_ticket:
+                return found_ticket[0] if isinstance(found_ticket, list) else found_ticket
+        except Exception as e:
+            # 捕获 "image size < template size" 错误，视为未找到
+            self.log_debug(f"图标搜索区域过小(可能被截断)，跳过: {e}")
+            return None
+
         return None
 
     def run(self):
@@ -128,7 +148,9 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
         enable_valley = self.config.get('接取谷地券', False)
         enable_wuling = self.config.get('接取武陵券', True)
         valley_min = float(self.config.get('接取谷地券最低金额(万)', 5.0))
+        valley_max = float(self.config.get('接取谷地券最高金额(万)', 40.0))
         wuling_min = float(self.config.get('接取武陵券最低金额(万)', 5.0))
+        wuling_max = float(self.config.get('接取武陵券最高金额(万)', 15.0))
 
         ticket_types = []
         if enable_valley:
@@ -150,6 +172,7 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
         # 滚动控制状态
         scroll_step = 0             # 当前滚动计数 (0, 1) -> 2次后刷新
         scroll_direction = -1       # -1: 向下(wheel负值), 1: 向上(wheel正值)
+        refresh_not_found_count = 0 # 连续未找到刷新按钮计数
 
         while True:
             if not self.enabled:
@@ -160,11 +183,27 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
                 full_texts = self.ocr(box=self.box_of_screen(0.05, 0.15, 0.95, 0.95))
                 rewards, accept_btns, refresh_btn = self.process_ocr_results(full_texts, filter_min, reward_pattern)
 
+                # 重置计数
+                if refresh_btn:
+                    refresh_not_found_count = 0
+
+                # 【新增步骤】按 Y 坐标排序，确保从上往下处理，才能正确计算行间距
+                rewards.sort(key=lambda x: x[0].y)
+
                 target_btn = None
                 matched_msg = ""
 
-                # 2. 遍历满足金额条件的所有报酬行，检查图标类型
+                # 初始化第一行的天花板（比如列表顶部的 Y 坐标，这里设为 OCR 区域的顶部大概位置）
+                # 这里的 0.15 * height 是我们在 box_of_screen 里设置的顶部
+                current_ceiling = self.height * 0.15
+
+                # 2. 遍历满足金额条件的所有报酬行
                 for reward_obj, val in rewards:
+                    # 更新当前行的天花板：
+                    # 对于当前行，允许的最高位置是 "current_ceiling"
+                    # 我们给一点点余量 (比如 +5 像素)，避免紧贴着上一行
+                    safe_ceiling = current_ceiling + 5
+
                     # 寻找该行对应的接取按钮
                     r_cy = reward_obj.y + reward_obj.height / 2
                     my_btn = None
@@ -173,17 +212,22 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
                             my_btn = btn
                             break
 
-                    if not my_btn:
-                        continue # 该行没找到按钮，跳过
+                    # 无论是否找到按钮，处理完这一行后，更新下一行的天花板
+                    # 下一行的天花板 = 当前行文字的底部 Y 坐标
+                    current_ceiling = reward_obj.y + reward_obj.height
 
-                    ticket_result = self.detect_ticket_type(reward_obj, ticket_types)
+                    if not my_btn:
+                        continue
+
+                    # 传入计算好的 safe_ceiling
+                    ticket_result = self.detect_ticket_type(reward_obj, ticket_types, safe_ceiling)
 
                     if ticket_result:
                         # 根据具体的图标类型判断对应的金额阈值
                         is_qualified = False
-                        if ticket_result.name == 'ticket_valley' and enable_valley and val >= valley_min:
+                        if ticket_result.name == 'ticket_valley' and enable_valley and val >= valley_min and val <= valley_max:
                             is_qualified = True
-                        elif ticket_result.name == 'ticket_wuling' and enable_wuling and val >= wuling_min:
+                        elif ticket_result.name == 'ticket_wuling' and enable_wuling and val >= wuling_min and val <= wuling_max:
                             is_qualified = True
 
                         if is_qualified:
@@ -192,16 +236,36 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
                             self.log_info(f"匹配成功: {matched_msg}")
                             break
                         else:
-                            self.log_debug(f"类型匹配({ticket_result.name})但金额({val}万)不达标")
+                            self.log_info(f"类型匹配({ticket_result.name})但金额({val}万)不符合范围")
                     else:
                         self.log_debug(f"金额符合({val}万)但未找到券种图标")
 
                 # 4. 执行操作
                 if target_btn:
-                    # 匹配成功后，增加日志并点击
+                    # 匹配成功后，尝试接取任务（最多3次）
                     self.log_info(f"准备接取任务：{matched_msg}")
-                    self.click(target_btn, after_sleep=2, down_time=0.1, move_back=True)
-                    return True
+
+                    success = False
+                    for attempt in range(1, 4):  # 尝试3次
+                        self.log_info(f"接取运送委托 (尝试 {attempt}/3)")
+                        self.click(target_btn, after_sleep=0)  # 点击后不等待
+                        self.sleep(1.0)  # 等待1秒
+
+                        # 检查是否出现"请尽快送达"
+                        delivery_text = self.wait_ocr(match="请尽快送达", time_out=1, raise_if_not_found=False)
+                        if delivery_text:
+                            self.log_info(f"抢单成功！(第 {attempt} 次尝试)")
+                            success = True
+                            return True
+                        else:
+                            self.log_debug(f"第 {attempt} 次尝试未成功，继续...")
+
+                    # 3次都失败
+                    if not success:
+                        self.log_info("抢单失败（可能已被抢走），等待4秒后继续检测...")
+                        self.sleep(4)
+                        # 继续循环，不返回，让后面的刷新逻辑处理
+
                 else:
                     self.log_info("未找到符合条件(金额+类型)的委托")
 
@@ -211,6 +275,7 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
                     else:
                         last_refresh_box = getattr(self, 'last_known_refresh_btn', None)
 
+                    # 2. 检查是否需要滚动 (每轮刷新之间最多滚动1次)
                     # 2. 检查是否需要滚动 (每轮刷新之间最多滚动1次)
                     if scroll_step < 1:
                         scroll_step += 1
@@ -227,15 +292,17 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
                     # 3. 滚动次数已满，准备刷新
                     self.log_info("已完成当前列表扫描，准备检测刷新")
 
-                    # 4. 尝试执行盲点刷新（直接用 Box 对象）
+                    refresh_not_found_count = 0 # 重置计数
+
                     if last_refresh_box:
+
                         last_click = getattr(self, 'last_refresh_time', 0)
                         elapsed = time.time() - last_click
 
-                        if elapsed < 5.2:
+                        if elapsed < 5.6:
                             # CD未好
-                            self.log_debug(f"刷新CD中 ({elapsed:.1f}/5.2s)，等待...")
-                            self.sleep(5.2 - elapsed)
+                            self.log_debug(f"刷新CD中 ({elapsed:.1f}/5.6s)，等待...")
+                            self.sleep(5.6 - elapsed)
 
                         # CD已好（或睡醒），执行点击
                         self.log_info(f"执行刷新 (坐标: {int(last_refresh_box.x)}, {int(last_refresh_box.y)})")
@@ -248,8 +315,15 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
 
                         self.sleep(1.0) # 等待刷新内容加载
                     else:
-                        self.log_info("警告: 尚未定位到刷新按钮位置，无法刷新，重试...")
-                        time.sleep(1.0)
+                        refresh_not_found_count += 1
+                        self.log_info(f"警告: 尚未定位到刷新按钮位置 ({refresh_not_found_count}/10)")
+
+                        if refresh_not_found_count >= 10:
+                            self.log_info("连续 10 次未找到刷新位置，判定为已在任务流程外或已接取，任务终止。")
+                            return
+
+                        self.log_info("等待1秒后重试...")
+                        self.sleep(1.0)
                         continue
             except Exception as e:
                 self.log_info(f"TakeDeliveryTask error: {e}")

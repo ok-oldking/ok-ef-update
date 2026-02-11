@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.46"
+version = "v0.0.49"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -115,6 +115,8 @@ config = {
     'onetime_tasks': [  # 用户点击触发的任务
         ["src.tasks.DailyTask", "DailyTask"],
         ["src.tasks.TakeDeliveryTask", "TakeDeliveryTask"],
+        ["src.tasks.WarehouseTransferTask", "WarehouseTransferTask"],
+        ["src.tasks.DeliveryTask", "DeliveryTask"],
         # ["src.tasks.BuySellTask", "BuySellTask"],
         ["src.tasks.EssenceScanTask", "EssenceScanTask"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
