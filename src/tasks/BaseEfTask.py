@@ -205,7 +205,6 @@ class BaseEfTask(BaseTask):
         if raise_if_fail:
             raise Exception("对中失败")
         else:
-            active_and_send_mouse_delta(self.hwnd.hwnd, -sum_dx/2, -sum_dy/2)
             return False
 
     def to_model_area(self, area, model):

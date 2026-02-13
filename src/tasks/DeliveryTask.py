@@ -263,7 +263,7 @@ class DeliveryTask(BaseEfTask):
 
     def zip_line_list_go(self, zip_line_list):
         for zip_line in zip_line_list:
-            self.align_ocr_or_find_target_to_center(re.compile(str(zip_line)), is_num=True)
+            self.align_ocr_or_find_target_to_center(re.compile(str(zip_line)), is_num=True,need_scroll=True)
             self.log_info(f"成功将滑索调整到{zip_line}的中心")
             self.click(after_sleep=0.5)
             start = time.time()
@@ -340,6 +340,7 @@ class DeliveryTask(BaseEfTask):
                     only_x=True,
                     ocr=False,
                     max_time=40,
+                    need_scroll=True
                 )
                 self.click(key="right")
             for i in range(40):
@@ -350,6 +351,7 @@ class DeliveryTask(BaseEfTask):
                     threshold=0.7,
                     only_x=True,
                     ocr=False,
+                    need_scroll=True
                 )
                 self.move_keys(
                     "w",
@@ -377,6 +379,7 @@ class DeliveryTask(BaseEfTask):
             ocr=False,
             only_x=True,
             raise_if_fail=False,
+            need_scroll=True
         )
         self.click(key="right")
         for i in range(40):
@@ -387,6 +390,7 @@ class DeliveryTask(BaseEfTask):
                 threshold=0.6,
                 only_x=True,
                 ocr=False,
+                need_scroll=True
             )
             self.move_keys(
                 "w",
