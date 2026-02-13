@@ -56,12 +56,10 @@
 *   **[夸克网盘](https://pan.quark.cn/s/a1052cec4d13)**: 国内网盘，免费，但需要注册并使用其客户端下载。
 
 ## ✨ 主要功能
-<img width="1774" height="1182" alt="QQ_1762960844719" src="https://github.com/user-attachments/assets/c5eb0145-0d45-44f9-85b3-184de0ef20bf" />
+<img width="750" height="1020" src="https://github.com/user-attachments/assets/0b055fc6-a4fa-46af-984d-55494532036b" />
+<img width="750" height="563" src="https://github.com/user-attachments/assets/6f535ba9-ad73-48ec-876c-ca96b1f1eecb" />
 
-*   **高分辨率支持**: 流畅运行于 4K 及以下所有 16:9 分辨率（最低 1600x900）。部分功能兼容 21:9 等超宽屏。
-*   **后台模式**: 支持游戏窗口最小化或被遮挡时在后台运行，不影响您使用电脑。
-*   **智能识别**: 全角色自动识别，无需手动配置技能序列，一键启动。
-*   **自动静音**: 在后台运行时，可自动将游戏静音。
+
 
 ## 🔧 疑难解答 (Troubleshooting)
 
