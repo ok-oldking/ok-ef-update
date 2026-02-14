@@ -33,6 +33,7 @@ class DeliveryTask(BaseEfTask):
                 "资源": "14,108,64,109",
                 "彦宁": "14,108,64,108,59",
                 "齐纶": "14,108,106",
+                "仅接取": False,
                 "仅送货": False,
                 "选择测试对象": "无"
             }
@@ -203,12 +204,8 @@ class DeliveryTask(BaseEfTask):
             self.scroll(cx, cy, -8)
             self.sleep(0.2)
         self.sleep(7)
-        # 读取券种配置
-        # enable_valley = self.config.get("接取谷地券", False)
         enable_wuling = True
         ticket_types = []
-        # if enable_valley:
-        #     ticket_types.append("ticket_valley")
         if enable_wuling:
             ticket_types.append("ticket_wuling")
 
@@ -237,15 +234,6 @@ class DeliveryTask(BaseEfTask):
                                     move_back=True,
                                 )
                                 return True
-                    # elif ticket_type == "ticket_valley" and enable_valley:
-                    #     if "极易损" in row["elems"][2].name:
-                    #         self.click(
-                    #             row["elems"][-1],
-                    #             after_sleep=2,
-                    #             down_time=0.1,
-                    #             move_back=True,
-                    #         )
-                    #         return True
             self.log_info("未找到符合条件(金额+类型)的委托，准备刷新重试")
             for i in range(2):
                 if last_refresh_box := self.wait_ocr(match="刷新", box="bottom_right"):
@@ -264,7 +252,7 @@ class DeliveryTask(BaseEfTask):
 
     def zip_line_list_go(self, zip_line_list):
         for zip_line in zip_line_list:
-            self.align_ocr_or_find_target_to_center(re.compile(str(zip_line)), is_num=True,need_scroll=True)
+            self.align_ocr_or_find_target_to_center(re.compile(str(zip_line)), is_num=True, need_scroll=True)
             self.log_info(f"成功将滑索调整到{zip_line}的中心")
             self.click(after_sleep=0.5)
             start = time.time()
@@ -358,7 +346,7 @@ class DeliveryTask(BaseEfTask):
                     1,
                 )
                 if self.wait_ocr(match="仓储节点", box="bottom_right", time_out=2, log=True):
-                    if result := self.wait_ocr(match="取货", box="bottom_right", time_out=2, log=True):
+                    if self.wait_ocr(match="取货", box="bottom_right", time_out=2, log=True):
                         self.send_key("f")
                     break
             while not self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=10, log=True):
@@ -455,31 +443,35 @@ class DeliveryTask(BaseEfTask):
             return
         if self.config.get("选择测试对象") == "无":
             for _ in range(3):
-                if not self.config.get("仅送货"):
+                if self.config.get("仅接取"):
                     self.other_run()
-                    self.wait_click_ocr(match=re.compile("送达"), box="bottom_right", settle_time=4, time_out=10,
-                                        after_sleep=10, log=True)
-                self.task_to_transfer_point()
-                self.to_storage_point_and_back_zip_line()
-                ends_list_pattern_dict = {re.compile(end): end for end in self.ends}
-                results = self.wait_ocr(
-                    match=list(ends_list_pattern_dict.keys()), box="left", time_out=10, log=True
-                )
-                self.send_key("f", after_sleep=2)
-                end_pattern = None
-                if not results:
-                    raise Exception("未识别到送货目标")
-
-                for result in results:
-                    for pattern in ends_list_pattern_dict:
-                        m = pattern.search(result.name)
-                        if m:
-                            end_pattern = pattern
-                            self.on_zip_line_start(ends_list_pattern_dict[pattern])
-                            break
-                self.to_end_and_submit(end_pattern)
-                if self.config.get("仅送货"):
                     break
+                else:
+                    if not self.config.get("仅送货"):
+                        self.other_run()
+                        self.wait_click_ocr(match=re.compile("送达"), box="bottom_right", settle_time=4, time_out=10,
+                                            after_sleep=10, log=True)
+                    self.task_to_transfer_point()
+                    self.to_storage_point_and_back_zip_line()
+                    ends_list_pattern_dict = {re.compile(end): end for end in self.ends}
+                    results = self.wait_ocr(
+                        match=list(ends_list_pattern_dict.keys()), box="left", time_out=10, log=True
+                    )
+                    self.send_key("f", after_sleep=2)
+                    end_pattern = None
+                    if not results:
+                        raise Exception("未识别到送货目标")
+
+                    for result in results:
+                        for pattern in ends_list_pattern_dict:
+                            m = pattern.search(result.name)
+                            if m:
+                                end_pattern = pattern
+                                self.on_zip_line_start(ends_list_pattern_dict[pattern])
+                                break
+                    self.to_end_and_submit(end_pattern)
+                    if self.config.get("仅送货"):
+                        break
         elif self.config.get("选择测试对象") == "完整循环测试":
             for end in self.ends:
                 self.task_to_transfer_point()

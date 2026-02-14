@@ -1,13 +1,19 @@
 import random
-import time
 import re
+import time
+
+import cv2
+import imagehash
+import numpy as np
 import pyautogui
+from PIL import Image
 from ok import BaseTask
+from skimage.metrics import structural_similarity as ssim
 
 from src.essence.essence_recognizer import EssenceInfo, read_essence_info
 from src.interaction.Key import move_keys
 from src.interaction.Mouse import active_and_send_mouse_delta, move_to_target_once
-from src.interaction.ScreenPosition import ScreenPosition as screen_position
+from src.interaction.ScreenPosition import ScreenPosition as sP
 
 TOLERANCE = 50
 
@@ -35,6 +41,93 @@ class BaseEfTask(BaseTask):
     #     if direction != "w":
     #         self.send_key(direction, down_time=0.05, after_sleep=0.5)
     #     self.center_camera()
+    
+
+    def wait_ui_stable(
+        self,
+        method="phash",
+        threshold=5,
+        stable_time=0.5,
+        max_wait=5,
+        refresh_interval=0.2,
+    ):
+        """
+        等待界面稳定（UI 停止变化）再执行操作
+
+        参数：
+            method: "phash" / "dhash" / "pixel" / "ssim"，比较两帧相似度方法
+            threshold: 方法对应的阈值
+                - phash/dhash: 汉明距离，默认5
+                - pixel: 平均像素差，默认5
+                - ssim: 相似度，0~1，默认0.98
+            stable_time: 连续稳定时间（秒），默认0.5秒
+            max_wait: 最大等待时间（秒），默认5秒
+            refresh_interval: 每次获取新帧的间隔（秒），默认0.2秒
+
+        返回：
+            True → UI 已稳定
+            False → 超时仍未稳定
+        """
+        start_time = time.time()
+        last_frame = self.next_frame()  # 获取初始帧
+        stable_start = None
+
+        while True:
+            current_frame = self.next_frame()  # 获取最新帧
+
+            # 1️⃣ phash / dhash 相似度
+            if method in ("phash", "dhash"):
+                img1 = Image.fromarray(last_frame)
+                img2 = Image.fromarray(current_frame)
+                h1 = (
+                    imagehash.phash(img1)
+                    if method == "phash"
+                    else imagehash.dhash(img1)
+                )
+                h2 = (
+                    imagehash.phash(img2)
+                    if method == "phash"
+                    else imagehash.dhash(img2)
+                )
+                distance = h1 - h2
+                is_stable = distance <= threshold
+
+            # 2️⃣ 像素差法
+            elif method == "pixel":
+                if last_frame.shape != current_frame.shape:
+                    is_stable = False
+                else:
+                    diff = cv2.absdiff(last_frame, current_frame)
+                    is_stable = np.mean(diff) <= threshold
+
+            # 3️⃣ 结构相似度 SSIM
+            elif method == "ssim":
+                last_gray = cv2.cvtColor(last_frame, cv2.COLOR_BGR2GRAY)
+                current_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
+                if last_gray.shape != current_gray.shape:
+                    is_stable = False
+                else:
+                    score, _ = ssim(last_gray, current_gray, full=True)
+                    is_stable = score >= threshold
+
+            else:
+                raise ValueError(f"Unknown method {method}")
+
+            # 处理连续稳定时间
+            if is_stable:
+                if stable_start is None:
+                    stable_start = time.time()
+                elif time.time() - stable_start >= stable_time:
+                    return True  # 连续稳定达到要求
+            else:
+                stable_start = None  # 重置计时
+
+            # 超时退出
+            if time.time() - start_time > max_wait:
+                return False
+
+            last_frame = current_frame
+            time.sleep(refresh_interval)
 
     def align_ocr_or_find_target_to_center(
         self,
@@ -212,7 +305,7 @@ class BaseEfTask(BaseTask):
     def to_model_area(self, area, model):
         self.send_key("y", after_sleep=2)
         if not self.wait_click_ocr(
-                match="更换", box=screen_position.LEFT.value, time_out=2, after_sleep=2
+                match="更换", box=sP.LEFT.value, time_out=2, after_sleep=2
         ):
             return
         if not self.wait_click_ocr(
@@ -226,13 +319,13 @@ class BaseEfTask(BaseTask):
             return
         if not self.wait_click_ocr(
                 match="确认",
-                box=screen_position.BOTTOM_RIGHT.value,
+                box=sP.BOTTOM_RIGHT.value,
                 time_out=2,
                 after_sleep=2,
         ):
             return
         box = self.wait_ocr(
-            match=re.compile(f"{model}"), box=screen_position.RIGHT.value, time_out=5
+            match=re.compile(f"{model}"), box=sP.RIGHT.value, time_out=5
         )
         if box:
             self.click(box[0], move_back=True, after_sleep=0.5)
@@ -303,6 +396,7 @@ class BaseEfTask(BaseTask):
             return True
         if esc:
             self.back(after_sleep=1.5)
+        return False
 
     def wait_pop_up(self,after_sleep=0):
         count = 0
@@ -319,6 +413,7 @@ class BaseEfTask(BaseTask):
             count += 1
 
     def wait_login(self):
+        close=None
         if not self._logged_in:
             if self.in_world():
                 self._logged_in = True
@@ -344,6 +439,8 @@ class BaseEfTask(BaseTask):
             ):
                 self.click(close, after_sleep=1)
                 return False
+        return False
+
 
     def read_essence_info(self) -> EssenceInfo | None:
         return read_essence_info(self)
