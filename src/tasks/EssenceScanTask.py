@@ -22,6 +22,7 @@ _INFO_LOCK_SUCCESS: Final = "上锁成功"
 _INFO_LOCK_SKIPPED: Final = "已锁定跳过"
 _INFO_GRADUATED_ESSENCE: Final = "已毕业基质"
 _INFO_GRADUATED_WEAPONS: Final = "已毕业武器"
+_INFO_NEW_LOCKED_WEAPONS: Final = "本次新锁毕业武器"
 
 
 _FEATURE_ESSENCE_UI_MARKER: Final = "essence_ui_marker"
@@ -149,6 +150,7 @@ class EssenceScanStats:
     lock_success: int = 0
     lock_skipped: int = 0
     matched_weapons: set[str] = field(default_factory=set)
+    new_locked_weapons: set[str] = field(default_factory=set)
 
     def update_info(self, task: "EssenceScanTask") -> None:
         task.info_set(_INFO_SCANNED, str(self.scanned))
@@ -473,6 +475,8 @@ class EssenceScanTask(BaseEfTask):
                         elif did_lock:
                             stats.lock_success += 1
                             self.info_set(_INFO_LOCK_SUCCESS, str(stats.lock_success))
+                            for m in matches:
+                                stats.new_locked_weapons.add(f"{m.weapon}({m.star})")
                         else:
                             stats.lock_skipped += 1
                             self.info_set(_INFO_LOCK_SKIPPED, str(stats.lock_skipped))
@@ -520,3 +524,8 @@ class EssenceScanTask(BaseEfTask):
             self.info_set(_INFO_STATUS, "已停止")
         else:
             self.info_set(_INFO_STATUS, "已完成")
+        if stats.new_locked_weapons:
+            text = "、".join(sorted(stats.new_locked_weapons))
+        else:
+            text = "无"
+        self.info_set(_INFO_NEW_LOCKED_WEAPONS, text)
