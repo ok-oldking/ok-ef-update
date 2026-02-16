@@ -8,7 +8,7 @@ user32 = ctypes.windll.user32
 
 from src.tasks.BaseEfTask import BaseEfTask
 
-on_zip_line_tip = ["移动鼠标", "选择前进目标", "向目标移动", "离开滑索架"]
+on_zip_line_tip = ["向目标移动", "离开滑索架"]
 on_zip_line_stop = [re.compile(i) for i in on_zip_line_tip]
 continue_next = re.compile("下一连接点")
 secondary_objective_direction_dot = ["secondary_objective_direction_dot", "secondary_objective_direction_dot_light",
@@ -20,22 +20,23 @@ class DeliveryTask(BaseEfTask):
         super().__init__(*args, **kwargs)
         self.default_config = {"_enabled": True}
         self.name = "自动送货"
-        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9 目前深色滤镜下干员别礼,赛希送货效果较好"
+        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9 目前干员别礼,赛希送货效果较好"
         self.ends = ["常沄", "资源", "彦宁", "齐纶"]
         self.config_description = {
             '选择测试对象': "默认是无，表示正常执行送货任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
         }
         self.default_config.update(
             {
-                "教程": "https://www.bilibili.com/video/BV1LLc7zFEF9",
+                "功能教程": """https://www.bilibili.com/video/BV1LLc7zFEF9\n分叉终点的滑索的高度最好要低于或等于分叉点滑索的高度\n角色的虚化机制导致拉近视角后头发无法有效遮挡背景以提高识别率""",
                 "通向送货点": "36,14",
                 "常沄": "14,108,64,109,60",
                 "资源": "14,108,64,109",
                 "彦宁": "14,108,64,108,59",
                 "齐纶": "14,108,106",
+                "是否启用滚动放大视角": True,
                 "仅接取": False,
                 "仅送货": False,
-                "选择测试对象": "无"
+                "选择测试对象": "无",
             }
         )
         self.config_type["选择测试对象"] = {
@@ -106,6 +107,7 @@ class DeliveryTask(BaseEfTask):
         mid_box = self.box_of_screen(area[2][0], area[2][1], area[2][2], area[2][3])
 
         # === OCR ===
+        self.next_frame()  # 确保拿到最新的截图
         left_items = self.ocr(box=left_box)
         right_items = self.ocr(box=right_box)
         mid_items = self.ocr(box=mid_box)
@@ -191,7 +193,7 @@ class DeliveryTask(BaseEfTask):
         return None
 
     def other_run(self):
-        self.ensure_main()
+        self.ensure_main(time_out=120)
         self.log_info("前置操作：按Y，点击‘仓储节点’，点击‘运送委托列表’")
         self.to_model_area("武陵", "仓储节点")
         delivery_box = self.wait_ocr(match="运送委托列表", time_out=5)
@@ -203,7 +205,7 @@ class DeliveryTask(BaseEfTask):
         for _ in range(6):
             self.scroll(cx, cy, -8)
             self.sleep(0.2)
-        self.sleep(7)
+        self.wait_ui_stable(refresh_interval=1)
         enable_wuling = True
         ticket_types = []
         if enable_wuling:
@@ -244,7 +246,7 @@ class DeliveryTask(BaseEfTask):
                         self.sleep(wait)
                     self.click(last_refresh_box, move_back=True)
                     self._last_refresh_ts = time.time()
-                    self.sleep(3.0)  # 等待刷新内容加载
+                    self.wait_ui_stable(refresh_interval=1) # 刷新后界面稳定的时间可能会比平常长一些，尤其是网络较慢的时候
                     break
                 else:
                     self.log_info("警告: 尚未定位到刷新按钮位置，无法刷新，重试...")
@@ -252,13 +254,28 @@ class DeliveryTask(BaseEfTask):
 
     def zip_line_list_go(self, zip_line_list):
         for zip_line in zip_line_list:
-            self.align_ocr_or_find_target_to_center(re.compile(str(zip_line)), is_num=True, need_scroll=True)
+            self.align_ocr_or_find_target_to_center(
+                re.compile(str(zip_line)),
+                is_num=True,
+                need_scroll=self.config.get("是否启用滚动放大视角"),
+                ocr_frame_processor=self.isolate_white_yellow_text,
+                max_time=100,
+                tolerance=20,
+            )
             self.log_info(f"成功将滑索调整到{zip_line}的中心")
             self.click(after_sleep=0.5)
             start = time.time()
-            while not self.ocr(match=on_zip_line_stop, box="bottom", log=True):
+            while True:
+                self.next_frame()
                 self.send_key("e")
-                self.sleep(0.5)
+                self.sleep(0.1)
+                result = self.ocr(
+                    match=on_zip_line_stop,
+                    box="bottom",
+                    log=True,
+                )
+                if result:
+                    break
                 if time.time() - start > 60:
                     raise Exception("滑索超时，强制退出")
         self.sleep(1)
@@ -266,8 +283,10 @@ class DeliveryTask(BaseEfTask):
 
     def on_zip_line_start(self, delivery_to):
         start = time.time()
-        while not self.ocr(match=on_zip_line_stop, box="bottom", log=True):
-            self.sleep(2)
+        self.sleep(1)
+        self.next_frame()
+        while not self.ocr(match=on_zip_line_stop,frame=self.next_frame(), box="bottom", log=True):
+            self.sleep(0.1)
             if time.time() - start > 60:
                 raise Exception("滑索超时，强制退出")
         zip_line_list_str = self.config.get(delivery_to)
@@ -311,7 +330,7 @@ class DeliveryTask(BaseEfTask):
         return True
 
     def to_storage_point_and_back_zip_line(self, only_zip_line=False):
-        if self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=30, log=True):
+        if self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=60, log=True):
             if self.wait_ocr(match="工业", box="top_left", time_out=2, log=True):
                 self.send_key("tab", after_sleep=1)
             self.send_key("f", after_sleep=2)
@@ -324,11 +343,11 @@ class DeliveryTask(BaseEfTask):
                 self.send_key("f", after_sleep=2)
                 self.align_ocr_or_find_target_to_center(
                     ocr_match_or_feature_name_list=secondary_objective_direction_dot,
-                    threshold=0.7,
+                    threshold=0.8,
                     ocr=False,
                     max_time=40,
-                    need_scroll=True,
-                    raise_if_fail=False
+                    raise_if_fail=False,
+                    need_scroll=self.config.get("是否启用滚动放大视角"),
                 )
                 self.click(key="right")
             for i in range(40):
@@ -339,7 +358,7 @@ class DeliveryTask(BaseEfTask):
                     threshold=0.7,
                     only_x=True,
                     ocr=False,
-                    need_scroll=True
+                    need_scroll=self.config.get("是否启用滚动放大视角"),
                 )
                 self.move_keys(
                     "w",
@@ -361,10 +380,10 @@ class DeliveryTask(BaseEfTask):
             self.send_key("f")
             self.align_ocr_or_find_target_to_center(
                 ocr_match_or_feature_name_list=secondary_objective_direction_dot,
-                threshold=0.6,
+                threshold=0.8,
                 ocr=False,
                 raise_if_fail=False,
-                need_scroll=True
+                need_scroll=self.config.get("是否启用滚动放大视角"),
             )
             self.click(key="right")
         for i in range(40):
@@ -372,10 +391,10 @@ class DeliveryTask(BaseEfTask):
             self.send_key("v")
             self.align_ocr_or_find_target_to_center(
                 ocr_match_or_feature_name_list=secondary_objective_direction_dot,
-                threshold=0.6,
+                threshold=0.8,
                 only_x=True,
                 ocr=False,
-                need_scroll=True
+                need_scroll=True,
             )
             self.move_keys(
                 "w",
@@ -398,6 +417,10 @@ class DeliveryTask(BaseEfTask):
     #         zip_line_list = [int(i) for i in zip_line_list_str.split(",")]
     #         self.zip_line_list_go(zip_line_list)
     def run(self):
+        if not self._logged_in:
+            self.ensure_main(time_out=240)
+        else:
+            self.ensure_main()
         if self.config.get("选择测试对象") == "无":
             for _ in range(3):
                 if self.config.get("仅接取"):
@@ -408,8 +431,10 @@ class DeliveryTask(BaseEfTask):
                         self.other_run()
                         self.wait_click_ocr(match=re.compile("送达"), box="bottom_right", settle_time=4, time_out=10,
                                             after_sleep=10, log=True)
-                    self.task_to_transfer_point()
-                    self.to_storage_point_and_back_zip_line()
+                    if not self.task_to_transfer_point():
+                        return
+                    if not self.to_storage_point_and_back_zip_line():
+                        return
                     ends_list_pattern_dict = {re.compile(end): end for end in self.ends}
                     results = self.wait_ocr(
                         match=list(ends_list_pattern_dict.keys()), box="left", time_out=10, log=True

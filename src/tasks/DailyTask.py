@@ -57,7 +57,11 @@ class DailyTask(BaseEfTask):
         if self.debug:
             repeat_times = self.config.get("重复测试的次数", 1)
             self.log_info(f"当前为调试模式，重复执行 {repeat_times} 次")
-        tasks = [
+        if not self._logged_in:
+            self.ensure_main(time_out=240)
+        else:
+            self.ensure_main()
+        tasks = [  # 确保在主界面
             ("送礼", self.give_gift_to_liaison),
             ("据点兑换", self.exchange_outpost_goods),
             ("转交运送委托", self.delivery_send_others),
@@ -75,9 +79,8 @@ class DailyTask(BaseEfTask):
                 keys = [key] if isinstance(key, str) else list(key)
                 if not any(self.config.get(k) for k in keys):
                     continue
-            self.ensure_main()
-            self.sleep(2)
             result = func()
+            self.ensure_main()
             if result is False:
                 self.log_info(f"任务 {key} 执行失败或未完成", notify=True)
                 failed_tasks.append(key)
