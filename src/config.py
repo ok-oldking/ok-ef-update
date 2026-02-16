@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.62"
+version = "v0.0.63"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -118,8 +118,8 @@ config = {
         ["src.tasks.WarehouseTransferTask", "WarehouseTransferTask"],
         ["src.tasks.DeliveryTask", "DeliveryTask"],
         ["src.tasks.Test", "Test"],
-        # ["src.tasks.BuySellTask", "BuySellTask"],
         ["src.tasks.EssenceScanTask", "EssenceScanTask"],
+        # ["src.tasks.BuySellTask", "BuySellTask"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
     ],
     'trigger_tasks': [  # 不断执行的触发式任务
