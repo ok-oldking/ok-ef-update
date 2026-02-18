@@ -20,20 +20,23 @@ class DeliveryTask(BaseEfTask):
         super().__init__(*args, **kwargs)
         self.default_config = {"_enabled": True}
         self.name = "自动送货"
-        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9 目前干员别礼,赛希送货效果较好"
+        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9"
         self.ends = ["常沄", "资源", "彦宁", "齐纶"]
         self.config_description = {
-            '选择测试对象': "默认是无，表示正常执行送货任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
+            "是否启用滚动放大视角": "启用后在对齐滑索时会自动滚动放大视角\n可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n建议启用此项时不要使用非白发或有白帽角色",
+            "选择测试对象": "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
+            "仅接取": "仅接取7.31w武陵委托，不送货",
+            "仅送货": "接取武陵委托后自动识别送货"
         }
         self.default_config.update(
             {
-                "功能教程": """https://www.bilibili.com/video/BV1LLc7zFEF9\n分叉终点的滑索的高度最好要低于或等于分叉点滑索的高度\n角色的虚化机制导致拉近视角后头发无法有效遮挡背景以提高识别率""",
+                "教程": "https://www.bilibili.com/video/BV1LLc7zFEF9",
                 "通向送货点": "36,14",
                 "常沄": "14,108,64,109,60",
                 "资源": "14,108,64,109",
                 "彦宁": "14,108,64,108,59",
                 "齐纶": "14,108,106",
-                "是否启用滚动放大视角": True,
+                "是否启用滚动放大视角": False,
                 "仅接取": False,
                 "仅送货": False,
                 "选择测试对象": "无",
@@ -225,10 +228,24 @@ class DeliveryTask(BaseEfTask):
                                 and "不易损" not in row["elems"][2].name
                         ):
                             x, y, to_x, to_y = row["box"]
-                            if self.find_feature(feature_name="7_31w_wuling",
-                                                 box=self.box_of_screen(x / self.width, y / self.height,
-                                                                        to_x / self.width, to_y / self.height),
-                                                 threshold=0.98):
+                            result = self.find_feature(
+                                feature_name="7_31w_wuling",
+                                box=self.box_of_screen(
+                                    x / self.width,
+                                    y / self.height,
+                                    to_x / self.width,
+                                    to_y / self.height,
+                                ),
+                                threshold=0.98,
+                            )
+
+                            if not result:
+                                result = self.find_feature(feature_name="7_31w_wuling_dark",
+                                                           box=self.box_of_screen(x / self.width, y / self.height,
+                                                                                  to_x / self.width,
+                                                                                  to_y / self.height),
+                                                           threshold=0.98)
+                            if result:
                                 self.click(
                                     row["elems"][-1],
                                     after_sleep=2,
@@ -246,7 +263,7 @@ class DeliveryTask(BaseEfTask):
                         self.sleep(wait)
                     self.click(last_refresh_box, move_back=True)
                     self._last_refresh_ts = time.time()
-                    self.wait_ui_stable(refresh_interval=1) # 刷新后界面稳定的时间可能会比平常长一些，尤其是网络较慢的时候
+                    self.wait_ui_stable(refresh_interval=1)  # 刷新后界面稳定的时间可能会比平常长一些，尤其是网络较慢的时候
                     break
                 else:
                     self.log_info("警告: 尚未定位到刷新按钮位置，无法刷新，重试...")
@@ -258,7 +275,7 @@ class DeliveryTask(BaseEfTask):
                 re.compile(str(zip_line)),
                 is_num=True,
                 need_scroll=self.config.get("是否启用滚动放大视角"),
-                ocr_frame_processor=self.isolate_white_yellow_text,
+                ocr_frame_processor_list=[self.isolate_gold_text, self.isolate_white_text],
                 max_time=100,
                 tolerance=20,
             )
@@ -285,7 +302,7 @@ class DeliveryTask(BaseEfTask):
         start = time.time()
         self.sleep(1)
         self.next_frame()
-        while not self.ocr(match=on_zip_line_stop,frame=self.next_frame(), box="bottom", log=True):
+        while not self.ocr(match=on_zip_line_stop, frame=self.next_frame(), box="bottom", log=True):
             self.sleep(0.1)
             if time.time() - start > 60:
                 raise Exception("滑索超时，强制退出")
