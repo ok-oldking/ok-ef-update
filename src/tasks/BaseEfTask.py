@@ -35,24 +35,12 @@ class BaseEfTask(BaseTask):
     def active_and_send_mouse_delta(self, hwnd, dx=1, dy=1, activate=True, only_activate=False, delay=0.02, steps=3):
         return active_and_send_mouse_delta(hwnd, dx, dy, activate, only_activate, delay, steps)
 
-    def isolate_white_text(self, frame):
+    def isolate_white_yellow_text(self, frame):
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # ===== 白色 =====
         lower_white = np.array([0, 0, 200], dtype=np.uint8)
         upper_white = np.array([180, 50, 255], dtype=np.uint8)
-
-        mask_white = cv2.inRange(hsv, lower_white, upper_white)
-
-        kernel = np.ones((2, 2), np.uint8)
-        mask_white = cv2.morphologyEx(mask_white, cv2.MORPH_CLOSE, kernel)
-
-        mask_white = cv2.bitwise_not(mask_white)
-
-        return cv2.cvtColor(mask_white, cv2.COLOR_GRAY2BGR)
-
-    def isolate_gold_text(self, frame):
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # ===== 金色（双段）=====
         lower_gold_strong = np.array([18, 120, 170], dtype=np.uint8)
@@ -61,17 +49,19 @@ class BaseEfTask(BaseTask):
         lower_gold_soft = np.array([18, 60, 140], dtype=np.uint8)
         upper_gold_soft = np.array([45, 200, 255], dtype=np.uint8)
 
+        mask_white = cv2.inRange(hsv, lower_white, upper_white)
         mask_gold_strong = cv2.inRange(hsv, lower_gold_strong, upper_gold_strong)
         mask_gold_soft = cv2.inRange(hsv, lower_gold_soft, upper_gold_soft)
 
         mask_gold = cv2.bitwise_or(mask_gold_strong, mask_gold_soft)
+        mask = cv2.bitwise_or(mask_gold, mask_white)
 
         kernel = np.ones((2, 2), np.uint8)
-        mask_gold = cv2.morphologyEx(mask_gold, cv2.MORPH_CLOSE, kernel)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-        mask_gold = cv2.bitwise_not(mask_gold)
+        mask = cv2.bitwise_not(mask)
 
-        return cv2.cvtColor(mask_gold, cv2.COLOR_GRAY2BGR)
+        return cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
 
     def click_with_alt(self, x: float | Box | List[Box] = -1, y: float = -1, move_back: bool = False,
                        name: str | None = None, interval: int = -1, move: bool = True, down_time: float = 0.01,
@@ -200,7 +190,7 @@ class BaseEfTask(BaseTask):
             slow_radius=200,
             once_time=1,
             tolerance=TOLERANCE,
-            ocr_frame_processor_list=None
+            ocr_frame_processor=None
     ):
         """
         Aligns a target detected by OCR or image feature to the center of the screen.
@@ -245,18 +235,13 @@ class BaseEfTask(BaseTask):
                 result = None
                 while time.time() - start_time < 2:
                     frame = self.next_frame()
-                    if not isinstance(ocr_frame_processor_list, list):
-                        ocr_frame_processor_list = [ocr_frame_processor_list]
-                    for ocr_frame_processor in ocr_frame_processor_list:
-                        result = self.ocr(
-                            match=ocr_match_or_feature_name_list,
-                            box=box,
-                            frame=frame,
-                            log=True,
-                            frame_processor=ocr_frame_processor,
-                        )
-                        if result:
-                            break
+                    result = self.ocr(
+                        match=ocr_match_or_feature_name_list,
+                        box=box,
+                        frame=frame,
+                        log=True,
+                        frame_processor=ocr_frame_processor,
+                    )
                     if result:
                         break
                     time.sleep(0.1)

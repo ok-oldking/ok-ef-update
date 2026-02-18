@@ -20,23 +20,20 @@ class DeliveryTask(BaseEfTask):
         super().__init__(*args, **kwargs)
         self.default_config = {"_enabled": True}
         self.name = "自动送货"
-        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9"
+        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9 目前干员别礼,赛希送货效果较好"
         self.ends = ["常沄", "资源", "彦宁", "齐纶"]
         self.config_description = {
-            "是否启用滚动放大视角": "启用后在对齐滑索时会自动滚动放大视角\n可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n建议启用此项时不要使用非白发或有白帽角色",
-            "选择测试对象": "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
-            "仅接取": "仅接取7.31w武陵委托，不送货",
-            "仅送货": "接取武陵委托后自动识别送货"
+            '选择测试对象': "默认是无，表示正常执行送货任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
         }
         self.default_config.update(
             {
-                "教程": "https://www.bilibili.com/video/BV1LLc7zFEF9",
+                "功能教程": """https://www.bilibili.com/video/BV1LLc7zFEF9\n分叉终点的滑索的高度最好要低于或等于分叉点滑索的高度\n角色的虚化机制导致拉近视角后头发无法有效遮挡背景以提高识别率""",
                 "通向送货点": "36,14",
                 "常沄": "14,108,64,109,60",
                 "资源": "14,108,64,109",
                 "彦宁": "14,108,64,108,59",
                 "齐纶": "14,108,106",
-                "是否启用滚动放大视角": False,
+                "是否启用滚动放大视角": True,
                 "仅接取": False,
                 "仅送货": False,
                 "选择测试对象": "无",
@@ -261,7 +258,7 @@ class DeliveryTask(BaseEfTask):
                 re.compile(str(zip_line)),
                 is_num=True,
                 need_scroll=self.config.get("是否启用滚动放大视角"),
-                ocr_frame_processor_list=[self.isolate_gold_text, self.isolate_white_text],
+                ocr_frame_processor=self.isolate_white_yellow_text,
                 max_time=100,
                 tolerance=20,
             )
