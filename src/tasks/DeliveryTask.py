@@ -3,6 +3,7 @@ import re
 import time
 
 from src.interaction.Mouse import active_and_send_mouse_delta
+from src.image.hsv_config import HSVRange as hR
 
 user32 = ctypes.windll.user32
 
@@ -109,11 +110,59 @@ class DeliveryTask(BaseEfTask):
         right_box = self.box_of_screen(area[1][0], area[1][1], area[1][2], area[1][3])
         mid_box = self.box_of_screen(area[2][0], area[2][1], area[2][2], area[2][3])
 
-        # === OCR ===
-        self.next_frame()  # 确保拿到最新的截图
-        left_items = self.ocr(box=left_box)
-        right_items = self.ocr(box=right_box)
-        mid_items = self.ocr(box=mid_box)
+        areas = [
+            ("left", left_box, 10),
+            ("right", right_box, 10),
+            ("mid", mid_box, 5),
+        ]
+
+        # 期望比例
+        expected_ratio = [2, 2, 1]  # 左:右:中
+        total_ratio = sum(expected_ratio)
+
+        results = {name: [] for name, _, _ in areas}
+        start_time = time.time()
+
+        while True:
+            self.next_frame()  # 拿到最新截图
+
+            # OCR
+            for name, box, _ in areas:
+                results[name] = self.ocr(
+                    match=re.compile(r"[\u4e00-\u9fff]+"),
+                    box=box,
+                    log=True,
+                    threshold=0.8
+                )
+
+            # 实际项数
+            counts = [len(results[name]) for name, _, _ in areas]
+
+            # 超时退出
+            if time.time() - start_time > 2:
+                break
+
+            # 检查最小项数
+            min_ok = all(c >= min_count for c, (_, _, min_count) in zip(counts, areas))
+
+            # 检查比例
+            total_count = sum(counts)
+            if total_count % total_ratio != 0:
+                ratio_ok = False
+            else:
+                unit = total_count // total_ratio
+                ratio_ok = all(c == r * unit for c, r in zip(counts, expected_ratio))
+
+            # 同时满足最小项数和比例才算 OK
+            if min_ok and ratio_ok:
+                break  # 满足条件，退出循环
+            else:
+                self.sleep(0.1)  # 不满足，等待再重扫一次
+
+        # 最终 OCR 结果
+        left_items = results["left"]
+        right_items = results["right"]
+        mid_items = results["mid"]
 
         # === 基础清洗 ===
         left_items = [i for i in left_items if getattr(i, "name", "").strip()]
@@ -275,7 +324,10 @@ class DeliveryTask(BaseEfTask):
                 re.compile(str(zip_line)),
                 is_num=True,
                 need_scroll=self.config.get("是否启用滚动放大视角"),
-                ocr_frame_processor_list=[self.isolate_gold_text, self.isolate_white_text],
+                ocr_frame_processor_list=[
+                    self.make_hsv_isolator(hR.GOLD_TEXT),
+                    self.make_hsv_isolator(hR.WHITE),
+                ],
                 max_time=100,
                 tolerance=20,
             )

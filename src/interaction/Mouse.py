@@ -61,7 +61,7 @@ def active_and_send_mouse_delta(
 # ===== control =====
 def move_to_target_once(hwnd, ocr_obj, screen_center_func,max_step=100,min_step=20,slow_radius=200):
     if ocr_obj is None:
-        return
+        return None
 
     target_center = (
         ocr_obj.x + ocr_obj.width // 2,

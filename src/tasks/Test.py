@@ -12,10 +12,12 @@ class Test(BaseEfTask):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "测试"
+    def test_ocr(self):
+        self.wait_ocr(match=re.compile(r"^\d+$"), log=True)
     def pre_check(self):
         self.find_feature(feature_name=FeatureList._7_31w_wuling, box=self.box_of_screen(0, 0, 1, 1), threshold=0.7)
     def in_friend_boat(self):
-        return self.wait_ocr(match=re.compile("离开"), box=sP.TOP_LEFT.value)
+        return self.wait_ocr(match=re.compile("离开"), box=sP.top_left)
     def ensure_in_friend_boat(self):
         start_time = time.time()
         while True:
@@ -25,21 +27,23 @@ class Test(BaseEfTask):
             if self.in_friend_boat():
                 return True
     def run(self):
-        self.click(after_sleep=0.5)
-        start = time.time()
-        while True:
-            self.next_frame()
-            self.send_key("e")
-            self.sleep(0.1)
-            result = self.ocr(
-                match=on_zip_line_stop,
-                box="bottom",
-                log=True,
-            )
-            if result:
-                break
-            if time.time() - start > 60:
-                raise Exception("滑索超时，强制退出")
+        pass
+
+        # self.click(after_sleep=0.5)
+        # start = time.time()
+        # while True:
+        #     self.next_frame()
+        #     self.send_key("e")
+        #     self.sleep(0.1)
+        #     result = self.ocr(
+        #         match=on_zip_line_stop,
+        #         box="bottom",
+        #         log=True,
+        #     )
+        #     if result:
+        #         break
+        #     if time.time() - start > 60:
+        #         raise Exception("滑索超时，强制退出")
         # while True:
         #     results = self.ocr(match=re.compile("90"))
         #     self.next_frame()

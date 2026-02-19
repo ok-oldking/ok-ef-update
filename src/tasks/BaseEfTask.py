@@ -1,16 +1,18 @@
 import random
 import re
 import time
-from typing import List
+from functools import partial
 
 import cv2
 import imagehash
 import numpy as np
 import pyautogui
+
+from typing import List
 from PIL import Image
 from ok import BaseTask, Box
 from skimage.metrics import structural_similarity as ssim
-
+from src.image.frame_processs import isolate_by_hsv_ranges
 from src.essence.essence_recognizer import EssenceInfo, read_essence_info
 from src.interaction.Key import move_keys
 from src.interaction.Mouse import active_and_send_mouse_delta, move_to_target_once, run_at_window_pos
@@ -26,52 +28,57 @@ class BaseEfTask(BaseTask):
         self._logged_in = False
 
     def move_keys(self, keys, duration):
+        """
+        :param keys: 按键或按键列表，例如 "w" 或 ["w", "a"]
+        :param duration: 按键持续时间（秒），例如 0.5
+
+        作用：向当前窗口发送按键移动指令。
+        """
+
         move_keys(self.hwnd.hwnd, keys, duration)
 
-    def move_to_target_once(self, hwnd, ocr_obj, max_step=100, min_step=20, slow_radius=200):
-        return move_to_target_once(hwnd, ocr_obj, self.screen_center, max_step=max_step, min_step=min_step,
-                                   slow_radius=slow_radius)
+    def move_to_target_once(self, ocr_obj, max_step=100, min_step=20, slow_radius=200):
+        """
+        :param ocr_obj: OCR 识别到的目标对象
+        :param max_step: 最大移动步长
+        :param min_step: 最小移动步长
+        :param slow_radius: 减速半径
 
-    def active_and_send_mouse_delta(self, hwnd, dx=1, dy=1, activate=True, only_activate=False, delay=0.02, steps=3):
-        return active_and_send_mouse_delta(hwnd, dx, dy, activate, only_activate, delay, steps)
+        作用：根据目标位置执行一次视角/鼠标对准。
+        """
+        return move_to_target_once(self.hwnd.hwnd,ocr_obj,self.screen_center,max_step=max_step,min_step=min_step,slow_radius=slow_radius)
 
-    def isolate_white_text(self, frame):
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    def active_and_send_mouse_delta(self,dx=1,dy=1,activate=True,only_activate=False,delay=0.02,steps=3):
+        """
+        :param dx: 水平位移
+        :param dy: 垂直位移
+        :param activate: 是否先激活窗口
+        :param only_activate: 是否仅激活不移动
+        :param delay: 每步延迟
+        :param steps: 分步次数
 
-        # ===== 白色 =====
-        lower_white = np.array([0, 0, 200], dtype=np.uint8)
-        upper_white = np.array([180, 50, 255], dtype=np.uint8)
+        作用：激活窗口并发送鼠标位移。
+        """
+        return active_and_send_mouse_delta(self.hwnd.hwnd,dx,dy,activate,only_activate,delay,steps)
 
-        mask_white = cv2.inRange(hsv, lower_white, upper_white)
+    def isolate_by_hsv_ranges(self, frame, ranges, invert=True, kernel_size=2):
+        """
+        :param frame: 输入图像（BGR）
+        :param ranges: HSV 区间列表
+        :param invert: 是否反转结果
+        :param kernel_size: 形态学核大小
 
-        kernel = np.ones((2, 2), np.uint8)
-        mask_white = cv2.morphologyEx(mask_white, cv2.MORPH_CLOSE, kernel)
+        作用：按 HSV 范围提取颜色区域。
+        """
+        return isolate_by_hsv_ranges(frame, ranges, invert, kernel_size)
 
-        mask_white = cv2.bitwise_not(mask_white)
+    def make_hsv_isolator(self, ranges):
+        """
+        :param ranges: HSV 区间列表
 
-        return cv2.cvtColor(mask_white, cv2.COLOR_GRAY2BGR)
-
-    def isolate_gold_text(self, frame):
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-        # ===== 金色（双段）=====
-        lower_gold_strong = np.array([18, 120, 170], dtype=np.uint8)
-        upper_gold_strong = np.array([40, 255, 255], dtype=np.uint8)
-
-        lower_gold_soft = np.array([18, 60, 140], dtype=np.uint8)
-        upper_gold_soft = np.array([45, 200, 255], dtype=np.uint8)
-
-        mask_gold_strong = cv2.inRange(hsv, lower_gold_strong, upper_gold_strong)
-        mask_gold_soft = cv2.inRange(hsv, lower_gold_soft, upper_gold_soft)
-
-        mask_gold = cv2.bitwise_or(mask_gold_strong, mask_gold_soft)
-
-        kernel = np.ones((2, 2), np.uint8)
-        mask_gold = cv2.morphologyEx(mask_gold, cv2.MORPH_CLOSE, kernel)
-
-        mask_gold = cv2.bitwise_not(mask_gold)
-
-        return cv2.cvtColor(mask_gold, cv2.COLOR_GRAY2BGR)
+        作用：生成固定 HSV 范围的图像处理函数。
+        """
+        return partial(self.isolate_by_hsv_ranges, ranges=ranges)
 
     def click_with_alt(self, x: float | Box | List[Box] = -1, y: float = -1, move_back: bool = False,
                        name: str | None = None, interval: int = -1, move: bool = True, down_time: float = 0.01,
@@ -91,11 +98,6 @@ class BaseEfTask(BaseTask):
 
     def screen_center(self):
         return int(self.width / 2), int(self.height / 2)
-
-    # def turn_direction(self, direction):
-    #     if direction != "w":
-    #         self.send_key(direction, down_time=0.05, after_sleep=0.5)
-    #     self.center_camera()
 
     def wait_ui_stable(
             self,
@@ -313,7 +315,7 @@ class BaseEfTask(BaseTask):
                 if abs(dx) <= tolerance and abs(dy) <= tolerance:
                     return True
                 else:
-                    dx, dy = self.move_to_target_once(self.hwnd.hwnd, result, max_step=max_step, min_step=min_step,
+                    dx, dy = self.move_to_target_once(result, max_step=max_step, min_step=min_step,
                                                       slow_radius=slow_radius)
                     sum_dx += dx
                     sum_dy += dy
@@ -335,7 +337,7 @@ class BaseEfTask(BaseTask):
                     last_target.y = screen_center_y - offset_y
                     last_target.width = offset_width
                     last_target.height = offset_height
-                    dx, dy = self.move_to_target_once(self.hwnd.hwnd, last_target)
+                    dx, dy = self.move_to_target_once(last_target)
                     sum_dx += dx
                     sum_dy += dy
                     last_target_fail_count += 1

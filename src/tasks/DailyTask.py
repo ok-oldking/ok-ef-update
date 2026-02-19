@@ -322,14 +322,15 @@ class DailyTask(BaseEfTask):
                     ("下一步", sP.bottom_right),
                     ("填充至满", sP.top_right),
                     ("下一步", sP.bottom_right),
-                    ("开始运送", sP.bottom_right, 12),
-                    ("获得调度券", sP.bottom_right, 12)
+                    ("开始运送", sP.bottom_right),
+                    ("获得调度券", sP.bottom_right)
                 ]
 
-                for step in steps:
+                for i in range(len(steps)):
+                    step = steps[i]
                     match = step[0]
                     box = step[1]
-                    timeout = step[2] if len(step) > 2 else 5
+                    timeout = 12 if i > 2 else 5
                     res = self.wait_ocr(match=match, box=box, time_out=timeout)
                     if isinstance(res, list) and len(res) > 0:
                         self.log_info(f"找到步骤 {match}，继续下一步")
