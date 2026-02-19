@@ -592,6 +592,7 @@ class DailyTask(BaseEfTask):
 
     def transfer_to_home_point(self):
         """通过地图界面传送到帝江号指定点"""
+        self.ensure_main()
         self.log_info("开始传送到帝江号")
         self.send_key("m", after_sleep=2)
         self.log_info("打开地图界面 (按下 M)")
@@ -878,13 +879,12 @@ class DailyTask(BaseEfTask):
                     break
 
         # 开始赠送流程
-        if not self.wait_click_ocr(
+        self.wait_click_ocr(
             match=re.compile("赠送"),
             box=sP.bottom_right,
             time_out=5,
             after_sleep=2,
-        ):
-            return False
+        )
         self.click(144 / 1920, 855 / 1080, after_sleep=2)
         self.log_info("点击赠送礼物位置")
         self.log_info("本次成功")
