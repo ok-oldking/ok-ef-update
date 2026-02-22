@@ -2,11 +2,7 @@ import ctypes
 import re
 import time
 
-from src.interaction.Mouse import active_and_send_mouse_delta
 from src.image.hsv_config import HSVRange as hR
-
-user32 = ctypes.windll.user32
-
 from src.tasks.BaseEfTask import BaseEfTask
 
 on_zip_line_tip = ["向目标移动", "离开滑索架"]
@@ -26,8 +22,8 @@ class DeliveryTask(BaseEfTask):
         self.config_description = {
             "是否启用滚动放大视角": "启用后在对齐滑索时会自动滚动放大视角\n可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n建议启用此项时不要使用非白发或有白帽角色",
             "选择测试对象": "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
-            "仅接取": "仅接取7.31w武陵委托，不送货",
-            "仅送货": "接取武陵委托后自动识别送货"
+            "仅接取": '前置是选择测试对象部分选择"无"\n仅接取7.31w武陵委托，不送货',
+            "仅送货": '前置是选择测试对象部分选择"无"\n接取武陵委托后启动自动识别送货',
         }
         self.default_config.update(
             {
@@ -52,6 +48,7 @@ class DeliveryTask(BaseEfTask):
         self.wuling_location = ["武陵城"]
         self.valley_location = ["供能高地", "矿脉源区", "源石研究园"]
         self._last_refresh_ts = 0
+        self.add_exit_after_config()
 
     def merge_left_right_groups(self):
         """
@@ -251,7 +248,6 @@ class DeliveryTask(BaseEfTask):
         delivery_box = self.wait_ocr(match="运送委托列表", time_out=5)
         if delivery_box:
             self.click(delivery_box[0], move_back=True, after_sleep=0.5)
-            active_and_send_mouse_delta(self.hwnd.hwnd, only_activate=True)
         cx = int(self.width * 0.5)
         cy = int(self.height * 0.5)
         for _ in range(6):

@@ -5,6 +5,7 @@ from src.data.world_map import areas_list, outpost_dict, default_goods
 from src.data.world_map_utils import get_area_by_outpost_name, get_goods_by_outpost_name
 from src.tasks.BaseEfTask import BaseEfTask
 from src.interaction.ScreenPosition import ScreenPosition as sP
+from src.image.hsv_config import HSVRange as hR
 import time
 from enum import Enum
 
@@ -30,11 +31,17 @@ class DailyTask(BaseEfTask):
                 "转交运送委托": True,
                 "转交委托奖励领取": True,
                 "造装备": True,
-                "日常奖励": True,
                 "收信用": True,
                 "尝试仅收培育室": False,
+                "日常奖励": True,
             }
         )
+        self.config_description.update(
+            {
+                "尝试仅收培育室":'前置是启用收信用'
+            }
+        )
+        self.add_exit_after_config()
         self.config_description.update(
             {
                 "尝试仅收培育室": "在好友交流助力时，优先尝试仅收取培育室的助力,但每次至少助力一次舱室",
@@ -68,8 +75,8 @@ class DailyTask(BaseEfTask):
             ("转交运送委托", self.delivery_send_others),
             ("转交委托奖励领取", self.claim_delivery_rewards),
             ("造装备", self.make_weapon),
-            ("日常奖励", self.claim_daily_rewards),
             ("收信用", self.collect_credit),
+            ("日常奖励", self.claim_daily_rewards),
         ]
         all_fail_tasks = []
         if self.debug:
@@ -331,10 +338,19 @@ class DailyTask(BaseEfTask):
                     match = step[0]
                     box = step[1]
                     timeout = 12 if i > 2 else 5
-                    res = self.wait_ocr(match=match, box=box, time_out=timeout)
-                    if isinstance(res, list) and len(res) > 0:
-                        self.log_info(f"找到步骤 {match}，继续下一步")
-                        self.click(res[0], after_sleep=2)
+                    res = None
+                    for i in range(2):
+                        self.next_frame()
+                        if i==0:
+                            res = self.wait_ocr(match=match, box=box, time_out=timeout)
+                        else:
+                            res =self.ocr(match=match, box=box,frame_processor=self.make_hsv_isolator(hR.DARK_GRAY_TEXT))
+                            if not res:
+                                res = self.ocr(match=match, box=box, frame_processor=self.make_hsv_isolator(hR.WHITE))
+                        if res:
+                            self.log_info(f"找到步骤 {match}，继续下一步")
+                            self.click(res[0], after_sleep=2)
+                            break
 
                     if not res:
                         self.log_info(f"步骤 {match} 未找到，跳过本次活动")
@@ -375,10 +391,10 @@ class DailyTask(BaseEfTask):
         num_str = self.wait_ocr(
             match=re.compile(r"\d+"),
             box=self.box_of_screen(
-                x=1224 / 1920,
-                y=235 / 1080,
-                width=327,
-                height=121,
+                1224 / 1920,
+                235 / 1080,
+                1551 / 1920,
+                356 / 1080,
             ),
             time_out=5,
         )
@@ -928,6 +944,7 @@ class DailyTask(BaseEfTask):
         while self.ocr(match="舰桥", box=sP.left):
             self.next_frame()
             self.sleep(0.5)
+        self.sleep(10)
         self.log_info("前往中央环厅")
         if not self.go_main_hall():
             self.log_info("未到达中央环厅，送礼任务中断")
