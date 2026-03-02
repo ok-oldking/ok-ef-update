@@ -11,11 +11,13 @@ from typing import List
 from PIL import Image
 from ok import BaseTask, Box
 from skimage.metrics import structural_similarity as ssim
+
+from src.data.FeatureList import FeatureList
 from src.image.frame_processs import isolate_by_hsv_ranges
 from src.essence.essence_recognizer import EssenceInfo, read_essence_info
 from src.interaction.Key import move_keys
 from src.interaction.Mouse import active_and_send_mouse_delta, move_to_target_once, run_at_window_pos
-from src.interaction.ScreenPosition import ScreenPosition as sP
+from src.interaction.ScreenPosition import ScreenPosition
 
 TOLERANCE = 50
 
@@ -25,6 +27,7 @@ class BaseEfTask(BaseTask):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._logged_in = False
+        self.box=ScreenPosition(self)
 
     def move_keys(self, keys, duration):
         """
@@ -79,7 +82,7 @@ class BaseEfTask(BaseTask):
         """
         return partial(self.isolate_by_hsv_ranges, ranges=ranges)
 
-    def click_with_alt(self, x: float | Box | List[Box] = -1, y: float = -1, move_back: bool = False,
+    def click_with_alt(self, x: int| float | Box | List[Box] = -1, y: int|float = -1, move_back: bool = False,
                        name: str | None = None, interval: int = -1, move: bool = True, down_time: float = 0.01,
                        after_sleep: float = 0, key: str = 'left'):
         self.send_key_down("alt")
@@ -390,7 +393,7 @@ class BaseEfTask(BaseTask):
     def to_model_area(self, area, model):
         self.send_key("y", after_sleep=2)
         if not self.wait_click_ocr(
-                match="更换", box=sP.left, time_out=2, after_sleep=2
+                match="更换", box=self.box.left, time_out=2, after_sleep=2
         ):
             return
         if not self.wait_click_ocr(
@@ -404,13 +407,13 @@ class BaseEfTask(BaseTask):
             return
         if not self.wait_click_ocr(
                 match="确认",
-                box=sP.bottom_right,
+                box=self.box.bottom_right,
                 time_out=2,
                 after_sleep=2,
         ):
             return
         box = self.wait_ocr(
-            match=re.compile(f"{model}"), box=sP.right, time_out=5
+            match=re.compile(f"{model}"), box=self.box.right, time_out=5
         )
         if box:
             self.click(box[0], move_back=True, after_sleep=0.5)
@@ -418,13 +421,15 @@ class BaseEfTask(BaseTask):
             self.log_error(f"未找到‘{model}’按钮，任务中止。")
             return
 
-    def skip_dialog(self, end_list=re.compile("确认"), end_box=sP.bottom_right):
+    def skip_dialog(self, end_list=re.compile("确认"), end_box=None):
+        if not end_box:
+            end_box=self.box.bottom_right
         start_time = time.time()
         while True:
             if time.time() - start_time > 60:
                 self.log_info("skip_dialog 超时退出")
                 return False
-            if self.wait_ocr(match=["工业", "探索"], box="top_left", time_out=1.5):
+            if self.wait_ocr(match=["工业", "探索"], box=self.box.top_left, time_out=1.5):
                 return True
             if self.find_one("skip_dialog_esc", horizontal_variance=0.05):
                 self.send_key("esc", after_sleep=0.1)
@@ -458,6 +463,18 @@ class BaseEfTask(BaseTask):
     def find_f(self):
         return self.find_one("pick_f", vertical_variance=0.05)
 
+    def in_friend_boat(self):
+        return self.wait_ocr(match=re.compile("离开"), box=self.box.top_left)
+
+    def ensure_in_friend_boat(self):
+        start_time = time.time()
+        while True:
+            if time.time() - start_time > 30:
+                self.log_info("进入好友帝江号超时")
+                return False
+            if self.in_friend_boat():
+                return True
+
     def ensure_main(self, esc=True, time_out=30, after_sleep=2):
         self.info_set("current task", f"wait main esc={esc}")
         if not self.wait_until(
@@ -480,10 +497,10 @@ class BaseEfTask(BaseTask):
             return True
         if self.wait_login():
             return True
-        if result := self.ocr(match=re.compile("结束拜访"), box=sP.bottom_right):
+        if result := self.ocr(match=re.compile("结束拜访"), box=self.box.bottom_right):
             self.click(result, after_sleep=1.5)
             return False
-        if result := self.ocr(match=[re.compile("确认"), re.compile("确定")], box=sP.bottom_right):
+        if result := self.ocr(match=[re.compile("确认"), re.compile("确定")], box=self.box.bottom_right):
             self.click(result, after_sleep=1.5)
             return False
         if esc:
@@ -497,7 +514,7 @@ class BaseEfTask(BaseTask):
             if count > 30:
                 return False
             result = self.find_one(
-                feature_name="reward_ok", box="bottom", threshold=0.8
+                feature_name="reward_ok", box=self.box.bottom, threshold=0.8
             )
             if result:
                 self.click(result, after_sleep=after_sleep)

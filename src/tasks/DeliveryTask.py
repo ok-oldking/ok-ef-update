@@ -274,7 +274,7 @@ class DeliveryTask(BaseEfTask):
                         ):
                             x, y, to_x, to_y = row["box"]
                             result = self.find_feature(
-                                feature_name="7_31w_wuling",
+                                feature_name="wuling_7_31w",
                                 box=self.box_of_screen(
                                     x / self.width,
                                     y / self.height,
@@ -285,7 +285,7 @@ class DeliveryTask(BaseEfTask):
                             )
 
                             if not result:
-                                result = self.find_feature(feature_name="7_31w_wuling_dark",
+                                result = self.find_feature(feature_name="wuling_7_31w_dark",
                                                            box=self.box_of_screen(x / self.width, y / self.height,
                                                                                   to_x / self.width,
                                                                                   to_y / self.height),
@@ -300,7 +300,7 @@ class DeliveryTask(BaseEfTask):
                                 return True
             self.log_info("未找到符合条件(金额+类型)的委托，准备刷新重试")
             for i in range(2):
-                if last_refresh_box := self.wait_ocr(match="刷新", box="bottom_right"):
+                if last_refresh_box := self.wait_ocr(match="刷新", box=self.box.bottom_right):
                     now = time.time()
                     last = getattr(self, "_last_refresh_ts", 0.0)
                     wait = max(0.0, 5.4 - (now - last))
@@ -345,7 +345,6 @@ class DeliveryTask(BaseEfTask):
                     raise Exception("滑索超时，强制退出")
         self.sleep(1)
         self.click(key="right")
-
     def on_zip_line_start(self, delivery_to):
         start = time.time()
         self.sleep(1)
@@ -363,19 +362,19 @@ class DeliveryTask(BaseEfTask):
         self.send_key("j", after_sleep=2)
 
         result = self.find_feature(
-            feature_name="one_task_to_map", threshold=0.8, box="bottom_right"
+            feature_name="one_task_to_map", threshold=0.8, box=self.box.bottom_right
         )
         if not result:
             return False
         self.click(result, after_sleep=2)
 
         if not self.wait_click_ocr(
-                match="标记显示管理", box="bottom_left", time_out=10, log=True
+                match="标记显示管理", box=self.box.bottom_left, time_out=10, log=True
         ):
             return False
 
         if not self.wait_click_ocr(
-                match="清空选中", box="bottom_left", time_out=10, log=True
+                match="清空选中", box=self.box.bottom_left, time_out=10, log=True
         ):
             return False
 
@@ -387,7 +386,7 @@ class DeliveryTask(BaseEfTask):
             return False
         self.click(result)
 
-        result = self.wait_ocr(match="传送", box="bottom_right", time_out=10, log=True)
+        result = self.wait_ocr(match="传送", box=self.box.bottom_right, time_out=10, log=True)
         if not result:
             return False
 
@@ -395,15 +394,15 @@ class DeliveryTask(BaseEfTask):
         return True
 
     def to_storage_point_and_back_zip_line(self, only_zip_line=False):
-        if self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=60, log=True):
-            if self.wait_ocr(match="工业", box="top_left", time_out=2, log=True):
+        if self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=60, log=True):
+            if self.wait_ocr(match="工业", box=self.box.top_left, time_out=2, log=True):
                 self.send_key("tab", after_sleep=1)
             self.send_key("f", after_sleep=2)
             self.zip_line_list_go([int(i) for i in self.config.get('通向送货点').split(
                 ",")])  # 需要在配置里指定出发点的滑索距离,这里默认是36m的滑索
             if only_zip_line:
                 return True
-            if self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=2, log=True):
+            if self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=2, log=True):
                 self.send_key("v", after_sleep=1)
                 self.send_key("f", after_sleep=2)
                 self.align_ocr_or_find_target_to_center(
@@ -429,18 +428,18 @@ class DeliveryTask(BaseEfTask):
                     "w",
                     1,
                 )
-                if self.wait_ocr(match="仓储节点", box="bottom_right", time_out=2, log=True):
-                    if self.wait_ocr(match="取货", box="bottom_right", time_out=2, log=True):
+                if self.wait_ocr(match="仓储节点", box=self.box.bottom_right, time_out=2, log=True):
+                    if self.wait_ocr(match="取货", box=self.box.bottom_right, time_out=2, log=True):
                         self.send_key("f")
                     break
-            while not self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=10, log=True):
+            while not self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=10, log=True):
                 self.move_keys("s", 1)
             return True
         return False
 
     def to_end_and_submit(self, end_pattern):
         self.ensure_main()
-        if self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=30, log=True):
+        if self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=30, log=True):
             self.send_key("v")
             self.send_key("f")
             self.align_ocr_or_find_target_to_center(
@@ -467,7 +466,7 @@ class DeliveryTask(BaseEfTask):
             )
             self.sleep(1)
             if self.wait_ocr(
-                    match=end_pattern, box="bottom_right", time_out=2, log=True
+                    match=end_pattern, box=self.box.bottom_right, time_out=2, log=True
             ):
                 self.send_key("f", after_sleep=2)
                 if not self.find_feature(feature_name="reward_ok"):
@@ -496,7 +495,7 @@ class DeliveryTask(BaseEfTask):
                 else:
                     if not self.config.get("仅送货"):
                         self.other_run()
-                        self.wait_click_ocr(match=re.compile("送达"), box="bottom_right", settle_time=4, time_out=10,
+                        self.wait_click_ocr(match=re.compile("送达"), box=self.box.bottom_right, settle_time=4, time_out=10,
                                             after_sleep=10, log=True)
                     if not self.task_to_transfer_point():
                         return
@@ -504,7 +503,7 @@ class DeliveryTask(BaseEfTask):
                         return
                     ends_list_pattern_dict = {re.compile(end): end for end in self.ends}
                     results = self.wait_ocr(
-                        match=list(ends_list_pattern_dict.keys()), box="left", time_out=10, log=True
+                        match=list(ends_list_pattern_dict.keys()), box=self.box.left, time_out=10, log=True
                     )
                     self.send_key("f", after_sleep=2)
                     end_pattern = None
@@ -525,7 +524,7 @@ class DeliveryTask(BaseEfTask):
             for end in self.ends:
                 self.task_to_transfer_point()
                 self.to_storage_point_and_back_zip_line(only_zip_line=True)
-                self.wait_ocr(match="登上滑索架", box="bottom_right", time_out=2, log=True)
+                self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=2, log=True)
                 self.send_key("f", after_sleep=2)
                 self.on_zip_line_start(end)
                 self.sleep(2)
