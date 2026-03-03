@@ -1,7 +1,9 @@
 import ctypes
 import re
 import time
-
+from dataclasses import dataclass
+from typing import List, Tuple
+from ok import Box
 from src.image.hsv_config import HSVRange as hR
 from src.tasks.BaseEfTask import BaseEfTask
 
@@ -12,7 +14,33 @@ secondary_objective_direction_dot = ["secondary_objective_direction_dot", "secon
                                      "secondary_objective_direction_dot_light_two"]
 
 
+@dataclass
+class DeliveryRow:
+    """运输委托行对象 - 包含OCR元素和坐标信息
+    
+    Attributes:
+        elems: OCR识别的元素列表
+        box: 行的边界框(x1, y1, x2, y2)
+    """
+    elems: List[Box]  # OCRItem列表
+    box: Tuple[float, float, float, float]  # (x1, y1, x2, y2)
+
+
 class DeliveryTask(BaseEfTask):
+    """运输委托自动化任务类 - 处理游戏中的送货操作"""
+    
+    # 配置键名常量
+    CFG_SCROLL_ENABLE = "是否启用滚动放大视角"
+    CFG_TEST_TARGET = "选择测试对象"
+    CFG_ONLY_ACCEPT = "仅接取"
+    CFG_ONLY_DELIVER = "仅送货"
+    CFG_TUTORIAL = "教程"
+    CFG_TO_DELIVERY_POINT = "通向送货点"
+    
+    # 配置值常量
+    TEST_NONE = "无"
+    TEST_FULL_CYCLE = "完整循环测试"
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.default_config = {"_enabled": True}
@@ -20,28 +48,28 @@ class DeliveryTask(BaseEfTask):
         self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9"
         self.ends = ["常沄", "资源", "彦宁", "齐纶"]
         self.config_description = {
-            "是否启用滚动放大视角": "启用后在对齐滑索时会自动滚动放大视角\n可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n建议启用此项时不要使用非白发或有白帽角色",
-            "选择测试对象": "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
-            "仅接取": '前置是选择测试对象部分选择"无"\n仅接取7.31w武陵委托，不送货',
-            "仅送货": '前置是选择测试对象部分选择"无"\n接取武陵委托后启动自动识别送货',
+            self.CFG_SCROLL_ENABLE: "启用后在对齐滑索时会自动滚动放大视角\n可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n建议启用此项时不要使用非白发或有白帽角色",
+            self.CFG_TEST_TARGET: "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
+            self.CFG_ONLY_ACCEPT: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n仅接取7.31w武陵委托，不送货',
+            self.CFG_ONLY_DELIVER: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n接取武陵委托后启动自动识别送货',
         }
         self.default_config.update(
             {
-                "教程": "https://www.bilibili.com/video/BV1LLc7zFEF9",
-                "通向送货点": "36,14",
+                self.CFG_TUTORIAL: "https://www.bilibili.com/video/BV1LLc7zFEF9",
+                self.CFG_TO_DELIVERY_POINT: "36,14",
                 "常沄": "14,108,64,109,60",
                 "资源": "14,108,64,109",
                 "彦宁": "14,108,64,108,59",
                 "齐纶": "14,108,106",
-                "是否启用滚动放大视角": False,
-                "仅接取": False,
-                "仅送货": False,
-                "选择测试对象": "无",
+                self.CFG_SCROLL_ENABLE: False,
+                self.CFG_ONLY_ACCEPT: False,
+                self.CFG_ONLY_DELIVER: False,
+                self.CFG_TEST_TARGET: self.TEST_NONE,
             }
         )
-        self.config_type["选择测试对象"] = {
+        self.config_type[self.CFG_TEST_TARGET] = {
             "type": "drop_down",
-            "options": ["无", "通向送货点"] + self.ends + ["完整循环测试"],
+            "options": [self.TEST_NONE, self.CFG_TO_DELIVERY_POINT] + self.ends + [self.TEST_FULL_CYCLE],
         }
         self.lv_regex = re.compile(r"(?i)lv|\d{2}")
         self.last_target = None
@@ -51,18 +79,22 @@ class DeliveryTask(BaseEfTask):
         self.add_exit_after_config()
 
     def merge_left_right_groups(self):
-        """
-        OCR 左右区域并按指定规则分组后合并为行（对象级）
-        每个 row:
-        - elems: OCRItem 列表
-        - box:   (x1, y1, x2, y2)
+        """合并OCR左右区域结果，按规则分组为行对象
+        
+        Returns:
+            list[DeliveryRow]: 运输委托行列表
         """
 
         def split_items_by_marker(items: list, marker: str):
             """
-            按 item.name 中的 marker 分组
-            marker 归入上一组
-            返回: list[list[item]]
+            按item.name中的marker分组，marker归入上一组
+            
+            Args:
+                items: OCRItem列表
+                marker: 分组标记字符串
+            
+            Returns:
+                list: 分组后的OCRItem列表
             """
             groups = []
             current = []
@@ -84,10 +116,17 @@ class DeliveryTask(BaseEfTask):
             return groups
 
         screen_scale_y1_y2 = {
-            1.5: (254 / 1280, 1134 / 1280),  # 3:2
-            1.0: (0.1271, 0.8561 + (0.8561 - 0.1271) / 11),  # 1:1
-            9 / 16: (0.075, 0.7916),  # 9:16
-            16 / 9: (290 / 1080, 926 / 1080),  # 16:9
+            1.5: (254 / 1280, 1134 / 1280),  # 3:2 宽高比（常见于部分平板与轻薄本，如 3000x2000）
+            1.0: (0.1271, 0.8561 + (0.8561 - 0.1271) / 11),  # 1:1 宽高比（方屏/窗口接近正方形）
+            9 / 16: (0.075, 0.7916),  # 9:16 宽高比（竖屏，如手机投屏）
+            16 / 9: (290 / 1080, 926 / 1080),  # 16:9 宽高比（主流显示器，如 1920x1080 / 2560x1440）
+        }
+
+        screen_scale_desc = {
+            1.5: "3:2（如 3000x2000）",
+            1.0: "1:1（方屏/接近方屏窗口）",
+            9 / 16: "9:16（竖屏）",
+            16 / 9: "16:9（如 1920x1080、2560x1440）",
         }
 
         x_ranges = [
@@ -103,7 +142,14 @@ class DeliveryTask(BaseEfTask):
         ratio = self.width / self.height
         area = screen_scale_areas.get(ratio)
         if area is None:
-            raise ValueError(f"不支持的屏幕比例: {ratio}")
+            supported = "、".join(
+                f"{k:.4f} -> {v}" for k, v in screen_scale_desc.items()
+            )
+            raise ValueError(
+                f"不支持的屏幕比例: {ratio:.6f}（当前分辨率: {self.width}x{self.height}）。"
+                f"支持的比例有：{supported}。"
+                "请调整游戏窗口比例"
+            )
         # === 区域定义 ===
         left_box = self.box_of_screen(area[0][0], area[0][1], area[0][2], area[0][3])
         right_box = self.box_of_screen(area[1][0], area[1][1], area[1][2], area[1][3])
@@ -228,14 +274,20 @@ class DeliveryTask(BaseEfTask):
                 max_x = max(e.x for e in [elems[0], elems[-1]])
                 min_y = min(e.y for e in [elems[-2], elems[-1]])
                 max_y = max(e.y + e.height for e in [elems[-2], elems[-1]])
-                rows.append({"elems": elems, "box": (min_x, min_y, max_x, max_y)})
+                rows.append(DeliveryRow(elems=elems, box=(min_x, min_y, max_x, max_y)))
 
         return rows
 
-    def detect_ticket_type(self, row):
-        if not row or not row.get("elems"):
-            return None
-        first_name = row["elems"][0].name
+    def detect_ticket_type(self, row: DeliveryRow):
+        """检测行对象中的票券类型
+        
+        Args:
+            row: DeliveryRow运输委托行对象
+        
+        Returns:
+            str: 票券类型("ticket_wuling"或"ticket_valley")或None
+        """
+        first_name = row.elems[0].name
         if any(k in first_name for k in self.wuling_location):
             return "ticket_wuling"
 
@@ -244,6 +296,11 @@ class DeliveryTask(BaseEfTask):
         return None
 
     def other_run(self):
+        """接取运输委托的主流程
+        
+        Returns:
+            bool: 成功返回True，失败返回False
+        """
         self.ensure_main(time_out=120)
         self.log_info("前置操作：按Y，点击‘仓储节点’，点击‘运送委托列表’")
         self.to_model_area("武陵", "仓储节点")
@@ -271,10 +328,10 @@ class DeliveryTask(BaseEfTask):
                     ticket_type = self.detect_ticket_type(row)
                     if ticket_type == "ticket_wuling" and enable_wuling:
                         if (
-                                "易损" in row["elems"][2].name
-                                and "不易损" not in row["elems"][2].name
+                                "易损" in row.elems[2].name
+                                and "不易损" not in row.elems[2].name
                         ):
-                            x, y, to_x, to_y = row["box"]
+                            x, y, to_x, to_y = row.box
                             result = self.find_feature(
                                 feature_name="wuling_7_31w",
                                 box=self.box_of_screen(
@@ -294,7 +351,7 @@ class DeliveryTask(BaseEfTask):
                                                            threshold=0.98)
                             if result:
                                 self.click(
-                                    row["elems"][-1],
+                                    row.elems[-1],
                                     after_sleep=2,
                                     down_time=0.1,
                                     move_back=True,
@@ -317,11 +374,16 @@ class DeliveryTask(BaseEfTask):
                     time.sleep(1.0)
 
     def zip_line_list_go(self, zip_line_list):
+        """按顺序对齐滑索并执行滑行
+        
+        Args:
+            zip_line_list: 滑索序号列表
+        """
         for zip_line in zip_line_list:
             self.align_ocr_or_find_target_to_center(
                 re.compile(str(zip_line)),
                 is_num=True,
-                need_scroll=self.config.get("是否启用滚动放大视角"),
+                need_scroll=self.config.get(self.CFG_SCROLL_ENABLE),
                 ocr_frame_processor_list=[
                     self.make_hsv_isolator(hR.GOLD_TEXT),
                     self.make_hsv_isolator(hR.WHITE),
@@ -347,7 +409,16 @@ class DeliveryTask(BaseEfTask):
                     raise Exception("滑索超时，强制退出")
         self.sleep(1)
         self.click(key="right")
+    
     def on_zip_line_start(self, delivery_to):
+        """进入滑索后，根据配置对齐并滑行至送货点
+        
+        Args:
+            delivery_to: 送货目标名称（用于获取配置中的滑索序号）
+        
+        Raises:
+            Exception: 滑索超时时抛出异常
+        """
         start = time.time()
         self.sleep(1)
         self.next_frame()
@@ -360,6 +431,11 @@ class DeliveryTask(BaseEfTask):
         self.zip_line_list_go(zip_line_list)
 
     def task_to_transfer_point(self):
+        """传送到运输委托的出发传送点
+        
+        Returns:
+            bool: 成功返回True，失败返回False
+        """
         self.ensure_main()
         self.send_key("j", after_sleep=2)
 
@@ -396,11 +472,19 @@ class DeliveryTask(BaseEfTask):
         return True
 
     def to_storage_point_and_back_zip_line(self, only_zip_line=False):
+        """从仓储点出发，乘坐滑索到送货点
+        
+        Args:
+            only_zip_line: True时仅乘坐出发滑索，False时乘至仓储点
+        
+        Returns:
+            bool: 成功返回True，失败返回False
+        """
         if self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=60, log=True):
             if self.wait_ocr(match="工业", box=self.box.top_left, time_out=2, log=True):
                 self.send_key("tab", after_sleep=1)
             self.send_key("f", after_sleep=2)
-            self.zip_line_list_go([int(i) for i in self.config.get('通向送货点').split(
+            self.zip_line_list_go([int(i) for i in self.config.get(self.CFG_TO_DELIVERY_POINT).split(
                 ",")])  # 需要在配置里指定出发点的滑索距离,这里默认是36m的滑索
             if only_zip_line:
                 return True
@@ -413,7 +497,7 @@ class DeliveryTask(BaseEfTask):
                     ocr=False,
                     max_time=40,
                     raise_if_fail=False,
-                    need_scroll=self.config.get("是否启用滚动放大视角"),
+                    need_scroll=self.config.get(self.CFG_SCROLL_ENABLE),
                 )
                 self.click(key="right")
             for i in range(40):
@@ -424,7 +508,7 @@ class DeliveryTask(BaseEfTask):
                     threshold=0.7,
                     only_x=True,
                     ocr=False,
-                    need_scroll=self.config.get("是否启用滚动放大视角"),
+                    need_scroll=self.config.get(self.CFG_SCROLL_ENABLE),
                 )
                 self.move_keys(
                     "w",
@@ -440,6 +524,11 @@ class DeliveryTask(BaseEfTask):
         return False
 
     def to_end_and_submit(self, end_pattern):
+        """从仓储点出发到目标点并提交委托
+        
+        Args:
+            end_pattern: 目标点的正则匹配模式
+        """
         self.ensure_main()
         if self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=30, log=True):
             self.send_key("v")
@@ -449,7 +538,7 @@ class DeliveryTask(BaseEfTask):
                 threshold=0.8,
                 ocr=False,
                 raise_if_fail=False,
-                need_scroll=self.config.get("是否启用滚动放大视角"),
+                need_scroll=self.config.get(self.CFG_SCROLL_ENABLE),
             )
             self.click(key="right")
         for i in range(40):
@@ -476,14 +565,10 @@ class DeliveryTask(BaseEfTask):
                     self.wait_click_ocr(match="确认", settle_time=2, after_sleep=2)
                 self.wait_pop_up(after_sleep=2)
                 break
-
-    # def run(self):
-    #     zip_line_list_str=self.config.get(self.config.get("选择测试对象"))
-    #     if zip_line_list_str:
-    #         zip_line_list = [int(i) for i in zip_line_list_str.split(",")]
-    #         self.zip_line_list_go(zip_line_list)
+    
     def run(self):
-        if self.config.get("选择测试对象") == "无":
+        """运输委托任务的主入口，支持多种运行模式"""
+        if self.config.get(self.CFG_TEST_TARGET) == self.TEST_NONE:
             for _ in range(3):
                 if not self._logged_in:
                     self.ensure_main(time_out=240)
@@ -491,11 +576,11 @@ class DeliveryTask(BaseEfTask):
                     self.ensure_main()
                 self.back(after_sleep=2)
                 self.ensure_main()
-                if self.config.get("仅接取"):
+                if self.config.get(self.CFG_ONLY_ACCEPT):
                     self.other_run()
                     break
                 else:
-                    if not self.config.get("仅送货"):
+                    if not self.config.get(self.CFG_ONLY_DELIVER):
                         self.other_run()
                         self.wait_click_ocr(match=re.compile("送达"), box=self.box.bottom_right, settle_time=4, time_out=10,
                                             after_sleep=10, log=True)
@@ -520,9 +605,9 @@ class DeliveryTask(BaseEfTask):
                                 self.on_zip_line_start(ends_list_pattern_dict[pattern])
                                 break
                     self.to_end_and_submit(end_pattern)
-                    if self.config.get("仅送货"):
+                    if self.config.get(self.CFG_ONLY_DELIVER):
                         break
-        elif self.config.get("选择测试对象") == "完整循环测试":
+        elif self.config.get(self.CFG_TEST_TARGET) == self.TEST_FULL_CYCLE:
             for end in self.ends:
                 self.task_to_transfer_point()
                 self.to_storage_point_and_back_zip_line(only_zip_line=True)
@@ -531,7 +616,7 @@ class DeliveryTask(BaseEfTask):
                 self.on_zip_line_start(end)
                 self.sleep(2)
         else:
-            zip_line_list_str = self.config.get(self.config.get("选择测试对象"))
+            zip_line_list_str = self.config.get(self.config.get(self.CFG_TEST_TARGET))
             if zip_line_list_str:
                 zip_line_list = [int(i) for i in zip_line_list_str.split(",")]
                 self.zip_line_list_go(zip_line_list)

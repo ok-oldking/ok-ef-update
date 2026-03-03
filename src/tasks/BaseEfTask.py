@@ -23,68 +23,81 @@ TOLERANCE = 50
 
 
 class BaseEfTask(BaseTask):
+    """游戏自动化任务基类，提供通用的交互和识别功能"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._logged_in = False
-        self.box=ScreenPosition(self)
+        self._logged_in = False  # 记录是否已登录游戏
+        self.box = ScreenPosition(self)  # 屏幕位置辅助对象，提供top/bottom/left/right等边界
 
     def move_keys(self, keys, duration):
+        """向当前窗口发送按键移动指令
+        
+        Args:
+            keys: 按键或按键列表，例如 "w" 或 ["w", "a"]
+            duration: 按键持续时间（秒），例如 0.5
         """
-        :param keys: 按键或按键列表，例如 "w" 或 ["w", "a"]
-        :param duration: 按键持续时间（秒），例如 0.5
-
-        作用：向当前窗口发送按键移动指令。
-        """
-
         move_keys(self.hwnd.hwnd, keys, duration)
 
     def move_to_target_once(self, ocr_obj, max_step=100, min_step=20, slow_radius=200):
+        """根据目标位置执行一次视角/鼠标对准
+        
+        Args:
+            ocr_obj: OCR识别到的目标对象
+            max_step: 最大移动步长
+            min_step: 最小移动步长
+            slow_radius: 减速半径
         """
-        :param ocr_obj: OCR 识别到的目标对象
-        :param max_step: 最大移动步长
-        :param min_step: 最小移动步长
-        :param slow_radius: 减速半径
+        return move_to_target_once(self.hwnd.hwnd, ocr_obj, self.screen_center, max_step=max_step, min_step=min_step, slow_radius=slow_radius)
 
-        作用：根据目标位置执行一次视角/鼠标对准。
+    def active_and_send_mouse_delta(self, dx=1, dy=1, activate=True, only_activate=False, delay=0.02, steps=3):
+        """激活窗口并发送鼠标位移
+        
+        Args:
+            dx: 水平位移
+            dy: 垂直位移
+            activate: 是否先激活窗口
+            only_activate: 是否仅激活不移动
+            delay: 每步延迟
+            steps: 分步次数
         """
-        return move_to_target_once(self.hwnd.hwnd,ocr_obj,self.screen_center,max_step=max_step,min_step=min_step,slow_radius=slow_radius)
-
-    def active_and_send_mouse_delta(self,dx=1,dy=1,activate=True,only_activate=False,delay=0.02,steps=3):
-        """
-        :param dx: 水平位移
-        :param dy: 垂直位移
-        :param activate: 是否先激活窗口
-        :param only_activate: 是否仅激活不移动
-        :param delay: 每步延迟
-        :param steps: 分步次数
-
-        作用：激活窗口并发送鼠标位移。
-        """
-        return active_and_send_mouse_delta(self.hwnd.hwnd,dx,dy,activate,only_activate,delay,steps)
+        return active_and_send_mouse_delta(self.hwnd.hwnd, dx, dy, activate, only_activate, delay, steps)
 
     def isolate_by_hsv_ranges(self, frame, ranges, invert=True, kernel_size=2):
-        """
-        :param frame: 输入图像（BGR）
-        :param ranges: HSV 区间列表
-        :param invert: 是否反转结果
-        :param kernel_size: 形态学核大小
-
-        作用：按 HSV 范围提取颜色区域。
+        """按HSV范围提取颜色区域
+        
+        Args:
+            frame: 输入图像（BGR）
+            ranges: HSV区间列表
+            invert: 是否反转结果
+            kernel_size: 形态学核大小
         """
         return isolate_by_hsv_ranges(frame, ranges, invert, kernel_size)
 
     def make_hsv_isolator(self, ranges):
-        """
-        :param ranges: HSV 区间列表
-
-        作用：生成固定 HSV 范围的图像处理函数。
+        """生成固定HSV范围的图像处理函数
+        
+        Args:
+            ranges: HSV区间列表
         """
         return partial(self.isolate_by_hsv_ranges, ranges=ranges)
 
     def click_with_alt(self, x: int| float | Box | List[Box] = -1, y: int|float = -1, move_back: bool = False,
                        name: str | None = None, interval: int = -1, move: bool = True, down_time: float = 0.01,
                        after_sleep: float = 0, key: str = 'left'):
+        """按住Alt并点击指定位置
+        
+        Args:
+            x: 点击X坐标（0-1为比例，或像素值）
+            y: 点击Y坐标
+            move_back: 点击后是否移回原位
+            name: 点击目标名称
+            interval: 多次点击间隔
+            move: 是否移动鼠标到目标
+            down_time: 鼠标按下时间
+            after_sleep: 点击后等待时间
+            key: 鼠标按键('left'/'right'/'middle')
+        """
         self.send_key_down("alt")
         self.sleep(0.5)
         self.click(x=x, y=y, move_back=move_back, name=name, interval=interval, move=move, down_time=down_time,
@@ -92,13 +105,32 @@ class BaseEfTask(BaseTask):
         self.send_key_up("alt")
 
     def scroll(self, x: int, y: int, count: int) -> None:
+        """在指定像素坐标滚动鼠标滚轮
+        
+        Args:
+            x: 滚动位置X坐标（像素）
+            y: 滚动位置Y坐标（像素）
+            count: 滚动次数（正数向上，负数向下）
+        """
         run_at_window_pos(self.hwnd.hwnd, super().scroll, x, y, 0.5, x, y, count)
 
     def scroll_relative(self, x: float, y: float, count: int) -> None:
+        """在指定比例坐标滚动鼠标滚轮
+        
+        Args:
+            x: 滚动位置X坐标（0-1的比例）
+            y: 滚动位置Y坐标（0-1的比例）
+            count: 滚动次数
+        """
         run_at_window_pos(self.hwnd.hwnd, super().scroll_relative, int(x * self.width), int(y * self.height), 0.5, x, y,
                           count)
 
     def screen_center(self):
+        """获取屏幕中心坐标
+        
+        Returns:
+            tuple: (中心X, 中心Y)
+        """
         return int(self.width / 2), int(self.height / 2)
 
     def wait_ui_stable(
@@ -109,22 +141,20 @@ class BaseEfTask(BaseTask):
             max_wait=5,
             refresh_interval=0.2,
     ):
-        """
-        等待界面稳定（UI 停止变化）再执行操作
-
-        参数：
-            method: "phash" / "dhash" / "pixel" / "ssim"，比较两帧相似度方法
+        """等待界面稳定（UI停止变化）再执行操作
+        
+        Args:
+            method: 比较两帧相似度方法("phash"/"dhash"/"pixel"/"ssim")
             threshold: 方法对应的阈值
                 - phash/dhash: 汉明距离，默认5
                 - pixel: 平均像素差，默认5
-                - ssim: 相似度，0~1，默认0.98
+                - ssim: 相似度(0~1)，默认0.98
             stable_time: 连续稳定时间（秒），默认0.5秒
             max_wait: 最大等待时间（秒），默认5秒
             refresh_interval: 每次获取新帧的间隔（秒），默认0.2秒
-
-        返回：
-            True → UI 已稳定
-            False → 超时仍未稳定
+        
+        Returns:
+            bool: True表示UI已稳定，False表示超时仍未稳定
         """
         start_time = time.time()
         last_frame = self.next_frame()  # 获取初始帧
@@ -206,24 +236,32 @@ class BaseEfTask(BaseTask):
             tolerance=TOLERANCE,
             ocr_frame_processor_list=None
     ):
+        """将OCR识别或图像特征检测的目标对准屏幕中心（自动移动视角/鼠标）
+        
+        Args:
+            ocr_match_or_feature_name_list: OCR匹配模式(str/List)或特征名称(str/List)
+            only_x: True时仅对齐X轴（左右），Y轴保持不变
+            only_y: True时仅对齐Y轴（上下），X轴保持不变
+            box: 搜索区域框(Box)，None表示全屏。用于限制OCR/特征检测范围
+            threshold: 图像特征匹配阈值(0-1)，默认0.8，仅在ocr=False时使用
+            max_time: 最大尝试循环次数，默认50次
+            ocr: True使用OCR模式识别，False使用图像特征匹配模式
+            raise_if_fail: True时对中失败抛出异常，False时返回False
+            is_num: 数字型目标Y坐标微调（用于识别数字时的位置校正）
+            need_scroll: True时在对中过程中自动滚动（通常用于列表)
+            max_step: 单次移动最大步长(像素)
+            min_step: 单次移动最小步长(像素)
+            slow_radius: 接近目标时减速的半径范围(像素)
+            once_time: 每次循环最小耗时(秒)，保证操作频率
+            tolerance: 目标中心与屏幕中心的容忍偏差(像素)，默认50，偏差在范围内判定成功
+            ocr_frame_processor_list: OCR帧处理函数列表(可用于色彩隔离等预处理)
+        
+        Returns:
+            bool: 成功对中返回True，失败返回False(当raise_if_fail=False时)
+        
+        Raises:
+            Exception: 对中失败且raise_if_fail=True时抛出异常
         """
-        Aligns a target detected by OCR or image feature to the center of the screen.
-        将OCR识别的目标或图像特征目标对准屏幕中心。
-
-        Parameters 参数:
-        ocr_match_or_feature_name – str or Feature. OCR匹配模式或特征名称。
-        only_x – bool. If True, only align the X axis. 是否仅对齐X轴。
-        only_y – bool. If True, only align the Y axis. 是否仅对齐Y轴。
-        box – Box or None. Screen area to search. 查找区域框，None表示全屏。
-        threshold – float. Feature matching threshold. 特征匹配阈值。
-        max_time – int. Maximum number of attempts. 最大尝试次数。
-        ocr – bool. Whether to use OCR mode. 是否使用OCR模式。
-        raise_if_fail – bool. Raise exception if alignment fails. 对中失败时是否抛出异常。
-        is_num – bool. Adjust Y for numeric targets. 数字型目标Y坐标微调。
-
-        Returns 返回值:
-        bool. True if successfully aligned, False if failed and raise_if_fail is False.
-        成功对中返回True，失败返回False（当raise_if_fail为False时）。"""
         if box:
             feature_box = box
         else:
@@ -247,7 +285,7 @@ class BaseEfTask(BaseTask):
                 # 使用OCR模式识别目标，设置超时时间为2秒，并启用日志记录
                 start_time = time.time()
                 result = None
-                while time.time() - start_time < 2:
+                while time.time() - start_time < 1:
                     frame = self.next_frame()
                     if not isinstance(ocr_frame_processor_list, list):
                         ocr_frame_processor_list = [ocr_frame_processor_list]
@@ -270,11 +308,11 @@ class BaseEfTask(BaseTask):
                 start_time = time.time()
                 result = None
                 while True:
-                    if time.time() - start_time >= 2:
+                    if time.time() - start_time >= 1:
                         break
                     self.next_frame()
                     for feature_name in ocr_match_or_feature_name_list:
-                        if time.time() - start_time >= 2:
+                        if time.time() - start_time >= 1:
                             break
 
                         result = self.find_feature(
@@ -391,6 +429,12 @@ class BaseEfTask(BaseTask):
             return False
 
     def to_model_area(self, area, model):
+        """导航到指定区域的特定模块
+        
+        Args:
+            area: 区域名称（如'地区建设'、'仓储'等）
+            model: 模块名称（如'仓储节点'、'据点管理'等）
+        """
         self.send_key("y", after_sleep=2)
         if not self.wait_click_ocr(
                 match="更换", box=self.box.left, time_out=2, after_sleep=2
@@ -422,8 +466,17 @@ class BaseEfTask(BaseTask):
             return
 
     def skip_dialog(self, end_list=re.compile("确认"), end_box=None):
+        """跳过对话框，自动点击"确认"或"跳过"按钮
+        
+        Args:
+            end_list: 结束按钮的OCR匹配模式（默认'确认'）
+            end_box: 查找按钮的区域框（默认右下角）
+        
+        Returns:
+            bool: 成功跳过返回True，超时返回False
+        """
         if not end_box:
-            end_box=self.box.bottom_right
+            end_box = self.box.bottom_right
         start_time = time.time()
         while True:
             if time.time() - start_time > 60:
@@ -447,26 +500,56 @@ class BaseEfTask(BaseTask):
                 return True
 
     def in_bg(self):
+        """判断游戏窗口是否在后台
+        
+        Returns:
+            bool: True表示在后台，False表示在前台
+        """
         return not self.hwnd.is_foreground()
 
     def find_confirm(self):
+        """寻找对话框中的"确认"按钮
+        
+        Returns:
+            Box: 找到的按钮位置，否则None
+        """
         return self.find_one(
             "skip_dialog_confirm", horizontal_variance=0.05, vertical_variance=0.05
         )
 
     def in_combat_world(self):
+        """判断是否在战斗场景中
+        
+        Returns:
+            bool: True表示在战斗，False表示不在
+        """
         in_combat_world = self.find_one("top_left_tab")
         if in_combat_world:
             self._logged_in = True
         return in_combat_world
 
     def find_f(self):
+        """寻找"F"键提示（拾取物品）
+        
+        Returns:
+            Box: 找到的F键提示位置
+        """
         return self.find_one("pick_f", vertical_variance=0.05)
 
     def in_friend_boat(self):
+        """判断是否在好友的帝江号舰船中
+        
+        Returns:
+            bool: True表示在舰船中
+        """
         return self.wait_ocr(match=re.compile("离开"), box=self.box.top_left)
 
     def ensure_in_friend_boat(self):
+        """确保进入好友帝江号舰船，超时30秒
+        
+        Returns:
+            bool: 成功进入返回True，超时返回False
+        """
         start_time = time.time()
         while True:
             if time.time() - start_time > 30:
@@ -476,6 +559,16 @@ class BaseEfTask(BaseTask):
                 return True
 
     def ensure_main(self, esc=True, time_out=30, after_sleep=2):
+        """确保回到主界面（游戏世界），超时会抛出异常
+        
+        Args:
+            esc: 是否按ESC键返回主界面
+            time_out: 等待超时时间（秒）
+            after_sleep: 完成后等待时间（秒）
+        
+        Raises:
+            Exception: 无法回到主界面时抛出异常
+        """
         self.info_set("current task", f"wait main esc={esc}")
         if not self.wait_until(
                 lambda: self.is_main(esc=esc), time_out=time_out, raise_if_not_found=False
@@ -485,12 +578,25 @@ class BaseEfTask(BaseTask):
         self.info_set("current task", f"in main esc={esc}")
 
     def in_world(self):
+        """判断是否在游戏世界中（非菜单/对话状态）
+        
+        Returns:
+            bool: True表示在世界中
+        """
         in_world = self.find_one("esc") and self.find_one("b") and self.find_one("c")
         if in_world:
             self._logged_in = True
         return in_world
 
     def is_main(self, esc=False):
+        """判断是否处于可执行任务的主界面状态
+        
+        Args:
+            esc: 如果是菜单状态，是否按ESC返回（返回False不意味着不是主界面）
+        
+        Returns:
+            bool: True表示处于主界面，False表示需要继续处理
+        """
         self.next_frame()  # 确保拿到最新的截图
         if self.in_world():
             self._logged_in = True
@@ -509,6 +615,14 @@ class BaseEfTask(BaseTask):
         return False
 
     def wait_pop_up(self, after_sleep=0):
+        """等待奖励弹窗出现并点击"OK"按钮
+        
+        Args:
+            after_sleep: 点击后等待时间（秒）
+        
+        Returns:
+            bool: 成功点击返回True，超时返回False
+        """
         count = 0
         while True:
             if count > 30:
@@ -523,6 +637,11 @@ class BaseEfTask(BaseTask):
             count += 1
 
     def wait_login(self):
+        """处理登录界面的各种弹窗（月卡、签到、奖励等）
+        
+        Returns:
+            bool: 成功处理返回True（进入世界），否则False
+        """
         close = None
         if not self._logged_in:
             if self.in_world():
@@ -552,4 +671,9 @@ class BaseEfTask(BaseTask):
         return False
 
     def read_essence_info(self) -> EssenceInfo | None:
+        """读取当前屏幕中的精华信息（用于装备识别）
+        
+        Returns:
+            EssenceInfo: 精华信息对象，失败返回None
+        """
         return read_essence_info(self)
