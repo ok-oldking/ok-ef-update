@@ -1098,7 +1098,8 @@ class DailyTask(BaseEfTask):
 
         sum_good_info = []
         for good in goods:
-            self.click(good, after_sleep=1)
+            self.click(good, after_sleep=2)
+            self.wait_ui_stable(refresh_interval=1)
             self.next_frame()
             stock_quantity = ocr_stock_quantity()
             good_piece = self.ocr(
