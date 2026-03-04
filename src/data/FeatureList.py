@@ -80,4 +80,8 @@ class FeatureList(str, Enum):
     visit_icon = 'visit_icon'
     wuling_6_65w = 'wuling_6_65w'
     wuling_7_31w = 'wuling_7_31w'
+    wuling_7_31w_2k = 'wuling_7_31w_2k'
+    wuling_7_31w_4k = 'wuling_7_31w_4k'
     wuling_7_31w_dark = 'wuling_7_31w_dark'
+    wuling_7_31w_dark_2k = 'wuling_7_31w_dark_2k'
+    wuling_7_31w_dark_4k = 'wuling_7_31w_dark_4k'

@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.84"
+version = "v0.0.85"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -75,7 +75,7 @@ config = {
         "min_height": 450,
     },
     "supported_resolution": {
-        # 'ratio': '16:9',  # 支持的游戏分辨率
+        'ratio': '16:9',  # 支持的游戏分辨率
         "min_size": (1280, 720),  # 支持的最低游戏分辨率
         # 'resize_to': [(2560, 1440), (1920, 1080), (1600, 900), (1280, 720)],  # 可选, 如果非16:9自动缩放为 resize_to
     },

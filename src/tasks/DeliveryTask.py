@@ -6,6 +6,7 @@ from typing import List, Tuple
 from ok import Box
 from src.image.hsv_config import HSVRange as hR
 from src.tasks.BaseEfTask import BaseEfTask
+from src.data.FeatureList import FeatureList as fL
 
 on_zip_line_tip = ["向目标移动", "离开滑索架"]
 on_zip_line_stop = [re.compile(i) for i in on_zip_line_tip]
@@ -28,7 +29,7 @@ class DeliveryRow:
 
 class DeliveryTask(BaseEfTask):
     """运输委托自动化任务类 - 处理游戏中的送货操作"""
-    
+
     # 配置键名常量
     CFG_SCROLL_ENABLE = "是否启用滚动放大视角"
     CFG_TEST_TARGET = "选择测试对象"
@@ -36,11 +37,11 @@ class DeliveryTask(BaseEfTask):
     CFG_ONLY_DELIVER = "仅送货"
     CFG_TUTORIAL = "教程"
     CFG_TO_DELIVERY_POINT = "通向送货点"
-    
+
     # 配置值常量
     TEST_NONE = "无"
     TEST_FULL_CYCLE = "完整循环测试"
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.default_config = {"_enabled": True}
@@ -332,23 +333,37 @@ class DeliveryTask(BaseEfTask):
                                 and "不易损" not in row.elems[2].name
                         ):
                             x, y, to_x, to_y = row.box
-                            result = self.find_feature(
-                                feature_name="wuling_7_31w",
-                                box=self.box_of_screen(
-                                    x / self.width,
-                                    y / self.height,
-                                    to_x / self.width,
-                                    to_y / self.height,
-                                ),
-                                threshold=0.98,
+                            box = self.box_of_screen(
+                                x / self.width,
+                                y / self.height,
+                                to_x / self.width,
+                                to_y / self.height,
                             )
+                            if self.width >= 3800:  # 4K
+                                feature_list = [
+                                    fL.wuling_7_31w_4k,
+                                    fL.wuling_7_31w_dark_4k,
+                                ]
+                            elif self.width >= 2500:  # 2K
+                                feature_list = [
+                                    fL.wuling_7_31w_2k,
+                                    fL.wuling_7_31w_dark_2k,
+                                ]
+                            else:  # 1080
+                                feature_list = [
+                                    fL.wuling_7_31w,
+                                    fL.wuling_7_31w_dark,
+                                ]
 
-                            if not result:
-                                result = self.find_feature(feature_name="wuling_7_31w_dark",
-                                                           box=self.box_of_screen(x / self.width, y / self.height,
-                                                                                  to_x / self.width,
-                                                                                  to_y / self.height),
-                                                           threshold=0.98)
+                            result = None
+                            for feature_name in feature_list:
+                                result = self.find_feature(
+                                    feature_name=feature_name,
+                                    box=box,
+                                    threshold=0.98,
+                                )
+                                if result:
+                                    break
                             if result:
                                 self.click(
                                     row.elems[-1],
@@ -415,7 +430,7 @@ class DeliveryTask(BaseEfTask):
                     raise Exception("滑索超时，强制退出")
         self.sleep(1)
         self.click(key="right")
-    
+
     def on_zip_line_start(self, delivery_to):
         """进入滑索后，根据配置对齐并滑行至送货点
         
@@ -571,7 +586,7 @@ class DeliveryTask(BaseEfTask):
                     self.wait_click_ocr(match="确认", settle_time=2, after_sleep=2)
                 self.wait_pop_up(after_sleep=2)
                 break
-    
+
     def run(self):
         """运输委托任务的主入口，支持多种运行模式"""
         if self.config.get(self.CFG_TEST_TARGET) == self.TEST_NONE:
