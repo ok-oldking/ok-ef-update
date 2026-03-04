@@ -78,7 +78,7 @@ class DeliveryTask(BaseEfTask):
         self._last_refresh_ts = 0
         self.add_exit_after_config()
 
-    def merge_left_right_groups(self):
+    def merge_left_right_groups(self) -> List[DeliveryRow]:
         """合并OCR左右区域结果，按规则分组为行对象
         
         Returns:
@@ -278,7 +278,7 @@ class DeliveryTask(BaseEfTask):
 
         return rows
 
-    def detect_ticket_type(self, row: DeliveryRow):
+    def detect_ticket_type(self, row: DeliveryRow) -> str | None:
         """检测行对象中的票券类型
         
         Args:
@@ -356,7 +356,13 @@ class DeliveryTask(BaseEfTask):
                                     down_time=0.1,
                                     move_back=True,
                                 )
-                                return True
+                                self.log_info("疑似已经接取委托")
+                                self.next_frame()
+                                if not self.wait_ocr(match="接取运送委托", box=self.box.bottom_right, time_out=1):
+                                    self.log_info("接取成功")
+                                    return True
+                                else:
+                                    self.log_info("接取失败，可能委托被抢了，继续寻找")
             self.log_info("未找到符合条件(金额+类型)的委托，准备刷新重试")
             for i in range(2):
                 if last_refresh_box := self.wait_ocr(match="刷新", box=self.box.bottom_right):
