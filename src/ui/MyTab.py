@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEvent
+from PySide6.QtCore import QEvent, QThread, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QWidget
 from qfluentwidgets import (
     BodyLabel,
@@ -14,6 +14,29 @@ from ok import Config
 from ok.gui.widget.CustomTab import CustomTab
 from src.tasks.TaskAccessMixin import TaskAccessMixin
 from src.scheduler import TaskSchedulerHelper
+
+
+class TaskWorker(QThread):
+    """后台任务执行工作线程"""
+    finished = Signal(bool, str)  # (success, message)
+    
+    def __init__(self, command, logger=None):
+        super().__init__()
+        self.command = command
+        self.logger = logger
+    
+    def run(self):
+        """在后台线程中执行命令"""
+        import subprocess
+        try:
+            result = subprocess.run(self.command, capture_output=True, text=True, timeout=30)
+            success = result.returncode == 0
+            message = result.stdout.strip() if success else (result.stderr.strip() or "未知错误")
+            self.finished.emit(success, message)
+        except subprocess.TimeoutExpired:
+            self.finished.emit(False, "命令执行超时（30秒）")
+        except Exception as e:
+            self.finished.emit(False, f"执行异常: {str(e)}")
 
 
 class TaskSchedulerTab(CustomTab):
@@ -552,9 +575,7 @@ class TaskSchedulerTab(CustomTab):
             self.logger.error(f"查询任务失败: {e}")
 
     def on_delete_task(self):
-        """删除计划任务"""
-        import subprocess
-
+        """删除计划任务（异步执行）"""
         task_index = self.manage_task_combo.currentIndex()
         if task_index < 0 or task_index >= len(self.manage_task_items):
             self.result_label.setText("✗ 请选择要管理的任务")
@@ -563,33 +584,33 @@ class TaskSchedulerTab(CustomTab):
 
         full_task_name = self.manage_task_items[task_index].get('name', '')
         task_name = full_task_name.replace(f"\\{self.task_folder}\\", "", 1)
+        
+        # 显示正在处理
+        self.result_label.setText("⟳ 正在删除任务...")
+        self.result_label.setStyleSheet("color: #fff;" if isDarkTheme() else "color: #000;")
+        
+        # 异步执行
+        cmd = ['schtasks', '/Delete', '/TN', full_task_name, '/F']
+        worker = TaskWorker(cmd, self.logger)
+        worker.finished.connect(lambda success, msg: self._on_delete_task_finished(success, full_task_name, task_name, msg))
+        self._delete_worker = worker  # 保持引用避免垃圾回收
+        worker.start()
 
-        self.logger.info(f"删除任务: {task_name}")
-
-        try:
-            cmd = ['schtasks', '/Delete', '/TN', full_task_name, '/F']
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            success = result.returncode == 0
-            message = f"✓ 任务 '{task_name}' 已删除" if success else f"✗ 删除失败: {(result.stderr or '未知错误').strip()}"
-
-            self.result_label.setText(message)
-            if success:
-                self.result_label.setStyleSheet("color: #0f6;" if isDarkTheme() else "color: #0a0;")
-                # 本地缓存同步删除
-                tasks = self.task_cache.get('tasks', []) or []
-                self.task_cache['tasks'] = [t for t in tasks if t.get('name') != full_task_name]
-                self._refresh_manage_task_combo()
-            else:
-                self.result_label.setStyleSheet("color: #f66;" if isDarkTheme() else "color: #d00;")
-        except Exception as e:
-            self.result_label.setText(f"✗ 异常: {str(e)}")
+    def _on_delete_task_finished(self, success, full_task_name, task_name, message):
+        """删除任务完成回调"""
+        if success:
+            self.result_label.setText(f"✓ 任务 '{task_name}' 已删除")
+            self.result_label.setStyleSheet("color: #0f6;" if isDarkTheme() else "color: #0a0;")
+            # 本地缓存同步删除
+            tasks = self.task_cache.get('tasks', []) or []
+            self.task_cache['tasks'] = [t for t in tasks if t.get('name') != full_task_name]
+            self._refresh_manage_task_combo()
+        else:
+            self.result_label.setText(f"✗ 删除失败: {message}")
             self.result_label.setStyleSheet("color: #f66;" if isDarkTheme() else "color: #d00;")
-            self.logger.error(f"删除任务失败: {e}")
 
     def on_enable_task(self):
-        """启用计划任务"""
-        import subprocess
-
+        """启用计划任务（异步执行）"""
         task_index = self.manage_task_combo.currentIndex()
         if task_index < 0 or task_index >= len(self.manage_task_items):
             self.result_label.setText("✗ 请选择要管理的任务")
@@ -598,23 +619,31 @@ class TaskSchedulerTab(CustomTab):
 
         full_task_name = self.manage_task_items[task_index].get('name', '')
         task_name = full_task_name.replace(f"\\{self.task_folder}\\", "", 1)
+        
+        # 显示正在处理
+        self.result_label.setText("⟳ 正在启用任务...")
+        self.result_label.setStyleSheet("color: #fff;" if isDarkTheme() else "color: #000;")
+        
+        # 异步执行
         cmd = ['schtasks', '/Change', '/TN', full_task_name, '/ENABLE']
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        worker = TaskWorker(cmd, self.logger)
+        worker.finished.connect(lambda success, msg: self._on_enable_task_finished(success, task_name, msg))
+        self._enable_worker = worker  # 保持引用避免垃圾回收
+        worker.start()
 
-        if result.returncode == 0:
+    def _on_enable_task_finished(self, success, task_name, message):
+        """启用任务完成回调"""
+        if success:
             self.result_label.setText(f"✓ 任务 '{task_name}' 已启用")
             self.result_label.setStyleSheet("color: #0f6;" if isDarkTheme() else "color: #0a0;")
             self._upsert_task_cache(task_name, "已启用")
             self._refresh_manage_task_combo()
         else:
-            err = result.stderr.strip() if result.stderr else "未知错误"
-            self.result_label.setText(f"✗ 启用失败: {err}")
+            self.result_label.setText(f"✗ 启用失败: {message}")
             self.result_label.setStyleSheet("color: #f66;" if isDarkTheme() else "color: #d00;")
 
     def on_disable_task(self):
-        """禁用计划任务"""
-        import subprocess
-
+        """禁用计划任务（异步执行）"""
         task_index = self.manage_task_combo.currentIndex()
         if task_index < 0 or task_index >= len(self.manage_task_items):
             self.result_label.setText("✗ 请选择要管理的任务")
@@ -623,17 +652,27 @@ class TaskSchedulerTab(CustomTab):
 
         full_task_name = self.manage_task_items[task_index].get('name', '')
         task_name = full_task_name.replace(f"\\{self.task_folder}\\", "", 1)
+        
+        # 显示正在处理
+        self.result_label.setText("⟳ 正在禁用任务...")
+        self.result_label.setStyleSheet("color: #fff;" if isDarkTheme() else "color: #000;")
+        
+        # 异步执行
         cmd = ['schtasks', '/Change', '/TN', full_task_name, '/DISABLE']
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        worker = TaskWorker(cmd, self.logger)
+        worker.finished.connect(lambda success, msg: self._on_disable_task_finished(success, task_name, msg))
+        self._disable_worker = worker  # 保持引用避免垃圾回收
+        worker.start()
 
-        if result.returncode == 0:
+    def _on_disable_task_finished(self, success, task_name, message):
+        """禁用任务完成回调"""
+        if success:
             self.result_label.setText(f"✓ 任务 '{task_name}' 已禁用")
             self.result_label.setStyleSheet("color: #0f6;" if isDarkTheme() else "color: #0a0;")
             self._upsert_task_cache(task_name, "已禁用")
             self._refresh_manage_task_combo()
         else:
-            err = result.stderr.strip() if result.stderr else "未知错误"
-            self.result_label.setText(f"✗ 禁用失败: {err}")
+            self.result_label.setText(f"✗ 禁用失败: {message}")
             self.result_label.setStyleSheet("color: #f66;" if isDarkTheme() else "color: #d00;")
 
     def showEvent(self, event):

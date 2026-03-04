@@ -558,7 +558,7 @@ class BaseEfTask(BaseTask):
             if self.in_friend_boat():
                 return True
 
-    def ensure_main(self, esc=True, time_out=30, after_sleep=2):
+    def ensure_main(self, esc=True, time_out=60, after_sleep=2):
         """确保回到主界面（游戏世界），超时会抛出异常
         
         Args:
