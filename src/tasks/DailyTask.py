@@ -380,7 +380,7 @@ class DailyTask(BaseEfTask):
 
                 # 检查可操作货物
                 results = self.wait_ocr(
-                    match=re.compile("货物装箱"),
+                    match=[re.compile("货物装箱"),re.compile("查看报价")],
                     box=self.box.bottom,
                     time_out=5,
                 )
@@ -403,16 +403,16 @@ class DailyTask(BaseEfTask):
 
                 # 执行一次转交操作
                 self.click(results[0], after_sleep=2)
-
+                start_index=0 if not("查看报价" in results[0].name) else 2
                 steps = [
                     ("下一步", self.box.bottom_right),
                     ("填充至满", self.box.top_right),
                     ("下一步", self.box.bottom_right),
-                    ("开始运送", self.box.bottom_right),
+                    ("开始运送", self.box_of_screen(1548/1920,951/1080,1,1)),
                     ("获得调度券", self.box.bottom_right)
                 ]
 
-                for i in range(len(steps)):
+                for i in range(start_index, len(steps)):
                     step = steps[i]
                     match = step[0]
                     box = step[1]
@@ -434,7 +434,7 @@ class DailyTask(BaseEfTask):
                             self.click(res[0], after_sleep=2)
                             break
 
-                    if not res:
+                    if not res and i!=2:  # 第3步“下一步”在某些活动中可能被替换为“开始运送”，因此不强制要求必须找到
                         self.log_info(f"步骤 {match} 未找到，跳过本次活动")
 
                         break
@@ -901,7 +901,7 @@ class DailyTask(BaseEfTask):
             chat_box = self.wait_ocr(
                 match=self.all_name_pattern,
                 box=self.box.bottom_right,
-                time_out=2,
+                time_out=1,
             )
             if chat_box:
                 self.log_info("发现干员，点击进行交互")
@@ -1021,6 +1021,7 @@ class DailyTask(BaseEfTask):
         while self.ocr(match="舰桥", box=self.box.left):
             self.next_frame()
             self.sleep(0.5)
+        self.sleep(10)
         self.log_info("前往中央环厅")
         if not self.navigate_to_main_hall():
             self.log_info("未到达中央环厅，送礼任务中断")
@@ -1360,9 +1361,10 @@ class DailyTask(BaseEfTask):
                 )
                 c_x = sell_good.friend_name_box.x - int((808 - 737) / 1920 * self.width)
                 self.click(c_x, c_y, after_sleep=1)
-                self.wait_click_ocr(
-                    match=re.compile("前往"), box=self.box.center, after_sleep=2
-                )
+                while not self.wait_click_ocr(
+                        match=re.compile("前往"), box=self.box.center, after_sleep=2
+                    ):
+                    self.click(c_x, c_y, after_sleep=1)
                 if not self.ensure_in_friend_boat():
                     self.log_info("未进入好友船")
                     return False

@@ -539,7 +539,7 @@ class DeliveryTask(BaseEfTask):
                     if self.wait_ocr(match="取货", box=self.box.bottom_right, time_out=2, log=True):
                         self.send_key("f")
                     break
-            while not self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=10, log=True):
+            while not self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=2, log=True):
                 self.move_keys("s", 1)
             return True
         return False
