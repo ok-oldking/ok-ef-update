@@ -4,7 +4,7 @@ import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 
-version = "v0.0.91"
+version = "v0.0.92"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -131,6 +131,6 @@ config = {
         ["src.tasks.AutoLoginTask", "AutoLoginTask"],
     ],
     "custom_tabs": [  # 自定义侧边栏页面
-        ["src.ui.MyTab", "TaskSchedulerTab"],
+        ["src.ui.TaskSchedulerTab", "TaskSchedulerTab"],  # 任务计划管理
     ],
 }
