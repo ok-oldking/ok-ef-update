@@ -549,26 +549,17 @@ msgstr "已禁用"
 msgid "Unknown"
 msgstr "未知"
 
-msgid "Daily"
-msgstr "每天"
+msgid "Custom Interval"
+msgstr "自定义间隔"
 
-msgid "Weekly"
-msgstr "每周"
+msgid "Custom"
+msgstr "自定义"
 
-msgid "Monthly"
-msgstr "每月"
+msgid "Days"
+msgstr "天数"
 
-msgid "Once"
-msgstr "一次"
+msgid "Hours"
+msgstr "小时数"
 
-msgid "Ready"
-msgstr "就绪"
-
-msgid "Running"
-msgstr "运行中"
-
-msgid "Disabled"
-msgstr "已禁用"
-
-msgid "Unknown"
-msgstr "未知"
+msgid "(0 = disabled)"
+msgstr "（0 = 禁用）"

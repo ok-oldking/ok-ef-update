@@ -592,3 +592,18 @@ msgstr "Disabled"
 
 msgid "Unknown"
 msgstr "Unknown"
+
+msgid "Custom Interval"
+msgstr "Custom Interval"
+
+msgid "Custom"
+msgstr "Custom"
+
+msgid "Days"
+msgstr "Days"
+
+msgid "Hours"
+msgstr "Hours"
+
+msgid "(0 = disabled)"
+msgstr "(0 = disabled)"
