@@ -296,7 +296,16 @@ class WindowsScheduleManager:
             trigger_type = ""
             if com_task.Definition.Triggers.Count > 0:
                 trigger = com_task.Definition.Triggers.Item(1)
-                trigger_type = trigger.Type.__str__()
+                trigger_type_raw = str(trigger.Type)
+                trigger_type_map = {
+                    "1": TriggerType.ONCE.value,
+                    "2": TriggerType.DAILY.value,
+                    "3": TriggerType.WEEKLY.value,
+                    "4": TriggerType.MONTHLY.value,
+                    "5": TriggerType.MONTHLY.value,
+                    "6": TriggerType.MONTHLY.value,
+                }
+                trigger_type = trigger_type_map.get(trigger_type_raw, trigger_type_raw)
 
             # 提取操作信息
             actions_desc = ""
@@ -306,8 +315,42 @@ class WindowsScheduleManager:
 
             # 获取 XML 配置
             xml_config = ""
+            interval_days = 0
+            interval_hours = 0
             try:
                 xml_config = com_task.Xml
+                # 从 XML 中解析自定义间隔
+                import re
+
+                # 解析天间隔: <DaysInterval>N</DaysInterval>
+                days_match = re.search(r"<DaysInterval>(\d+)</DaysInterval>", xml_config)
+                if days_match:
+                    interval_days = int(days_match.group(1))
+                    # 如果不是 1 天，说明是自定义间隔
+                    if interval_days > 1:
+                        trigger_type = "Custom"
+
+                # 解析小时间隔: <Interval>PT(\d+)H</Interval>
+                hours_match = re.search(r"<Interval>PT(\d+)H</Interval>", xml_config)
+                if hours_match:
+                    interval_hours = int(hours_match.group(1))
+                    trigger_type = "Custom"
+
+                # 兜底：从 XML 识别触发类型，避免 COM 返回异常值/空值
+                xml_lower = xml_config.lower()
+                if not trigger_type or trigger_type.isdigit():
+                    if "<schedulebyweek>" in xml_lower:
+                        trigger_type = TriggerType.WEEKLY.value
+                    elif "<schedulebymonth>" in xml_lower:
+                        trigger_type = TriggerType.MONTHLY.value
+                    elif "<timetrigger>" in xml_lower and "<repetition>" not in xml_lower:
+                        trigger_type = TriggerType.ONCE.value
+                    elif "<schedulebyday>" in xml_lower:
+                        trigger_type = TriggerType.DAILY.value
+
+                # 自定义触发优先级最高
+                if interval_hours > 0 or interval_days > 1:
+                    trigger_type = TriggerType.CUSTOM.value
             except Exception as e:
                 logger.debug(f"Failed to get XML config for task {name}: {e}")
 
@@ -337,6 +380,8 @@ class WindowsScheduleManager:
                     else ""
                 ),
                 xml_config=xml_config,
+                interval_days=interval_days,
+                interval_hours=interval_hours,
             )
             return task_info
         except Exception as e:
@@ -410,6 +455,8 @@ class WindowsScheduleManager:
 
         # 尝试获取 XML 配置
         xml_config = ""
+        interval_days = 0
+        interval_hours = 0
         try:
             task_path = task_dict.get("TaskName", "")
             if task_path:
@@ -418,20 +465,53 @@ class WindowsScheduleManager:
                 )
                 if result.returncode == 0:
                     xml_config = result.stdout
+
+            if xml_config:
+                import re
+
+                days_match = re.search(r"<DaysInterval>(\d+)</DaysInterval>", xml_config)
+                if days_match:
+                    interval_days = int(days_match.group(1))
+
+                hours_match = re.search(r"<Interval>PT(\d+)H</Interval>", xml_config)
+                if hours_match:
+                    interval_hours = int(hours_match.group(1))
         except Exception as e:
             logger.debug(f"Failed to get XML for task {name}: {e}")
+
+        schedule_type = (
+            task_dict.get("Schedule Type", "") or task_dict.get("ScheduleType", "") or task_dict.get("计划类型", "")
+        )
+        schedule_lower = schedule_type.lower()
+        trigger_type = ""
+        if "daily" in schedule_lower or "每天" in schedule_type:
+            trigger_type = TriggerType.DAILY.value
+        elif "weekly" in schedule_lower or "每周" in schedule_type:
+            trigger_type = TriggerType.WEEKLY.value
+        elif "monthly" in schedule_lower or "每月" in schedule_type:
+            trigger_type = TriggerType.MONTHLY.value
+        elif "once" in schedule_lower or "one time" in schedule_lower or "一次" in schedule_type:
+            trigger_type = TriggerType.ONCE.value
+
+        if interval_hours > 0 or interval_days > 1:
+            trigger_type = TriggerType.CUSTOM.value
+
+        status = task_dict.get("Status", "") or task_dict.get("状态", "")
 
         task_info = ScheduleTaskInfo(
             name=name,
             path=task_dict.get("TaskName", ""),
-            enabled=task_dict.get("Status", "") == "Ready" or task_dict.get("Status", "") == "Running",
-            status=task_dict.get("Status", "Unknown"),
+            enabled=status == "Ready" or status == "Running" or status == "就绪" or status == "正在运行",
+            status=status or "Unknown",
+            trigger_type=trigger_type,
             next_run_time=task_dict.get("Next Run Time", ""),
             last_run_time=task_dict.get("Last Run Time", ""),
             last_result=(int(task_dict.get("Last Result", 0)) if task_dict.get("Last Result", "").isdigit() else 0),
             author=task_dict.get("Author", ""),
             description=task_dict.get("Description", ""),
             xml_config=xml_config,
+            interval_days=interval_days,
+            interval_hours=interval_hours,
         )
         return task_info
 
@@ -498,6 +578,8 @@ class WindowsScheduleManager:
                         start_hour,
                         start_minute,
                         auto_exit,
+                        interval_days,
+                        interval_hours,
                     )
 
                 if success:
@@ -554,6 +636,8 @@ class WindowsScheduleManager:
                     start_hour,
                     start_minute,
                     auto_exit,
+                    interval_days,
+                    interval_hours,
                 )
 
             # 生成 XML 配置
@@ -612,6 +696,8 @@ class WindowsScheduleManager:
                 start_hour,
                 start_minute,
                 auto_exit,
+                interval_days,
+                interval_hours,
             )
 
     def _create_task_via_schtasks(
@@ -625,11 +711,22 @@ class WindowsScheduleManager:
         start_hour: int = 9,
         start_minute: int = 0,
         auto_exit: bool = True,
+        interval_days: int = 0,
+        interval_hours: int = 0,
     ) -> bool:
         """通过 schtasks 命令创建任务（降级方案）"""
         try:
             xml_config = self._generate_task_xml(
-                task_name, task_index, trigger_type, timeout_hours, "", start_hour, start_minute, auto_exit
+                task_name,
+                task_index,
+                trigger_type,
+                timeout_hours,
+                "",
+                start_hour,
+                start_minute,
+                auto_exit,
+                interval_days,
+                interval_hours,
             )
             xml_file = Path(f"temp_task_{task_name}.xml")
 
@@ -837,67 +934,63 @@ class WindowsScheduleManager:
         """获取触发器 XML"""
         if trigger_type == TriggerType.DAILY:
             return f"""<CalendarTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
       </ScheduleByDay>
     </CalendarTrigger>"""
         elif trigger_type == TriggerType.WEEKLY:
             return f"""<CalendarTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
       <ScheduleByWeek>
         <WeeksInterval>1</WeeksInterval>
         <DaysOfWeek>
-          <Monday />
-          <Tuesday />
-          <Wednesday />
-          <Thursday />
-          <Friday />
+                    <Monday></Monday>
         </DaysOfWeek>
       </ScheduleByWeek>
     </CalendarTrigger>"""
         elif trigger_type == TriggerType.MONTHLY:
             return f"""<CalendarTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
       <ScheduleByMonth>
         <DaysOfMonth>
           <Day>1</Day>
         </DaysOfMonth>
         <Months>
-          <January />
-          <February />
-          <March />
-          <April />
-          <May />
-          <June />
-          <July />
-          <August />
-          <September />
-          <October />
-          <November />
-          <December />
+                    <January></January>
+                    <February></February>
+                    <March></March>
+                    <April></April>
+                    <May></May>
+                    <June></June>
+                    <July></July>
+                    <August></August>
+                    <September></September>
+                    <October></October>
+                    <November></November>
+                    <December></December>
         </Months>
       </ScheduleByMonth>
     </CalendarTrigger>"""
         elif trigger_type == TriggerType.CUSTOM:
-            # 自定义间隔：支持天数或小时数
+            # 自定义间隔：支持天间隔或小时间隔
             if interval_days > 0:
-                # 按天数重复
+                # 基于天的间隔（使用 CalendarTrigger）
                 return f"""<CalendarTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
       <ScheduleByDay>
         <DaysInterval>{interval_days}</DaysInterval>
       </ScheduleByDay>
     </CalendarTrigger>"""
             elif interval_hours > 0:
-                # 按小时数重复
+                # 基于小时的间隔（使用 TimeTrigger + Repetition）
                 return f"""<TimeTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
       <Repetition>
         <Interval>PT{interval_hours}H</Interval>
         <Duration>P999Y</Duration>
@@ -905,18 +998,18 @@ class WindowsScheduleManager:
       </Repetition>
     </TimeTrigger>"""
             else:
-                # 默认每天
+                # 默认：每天一次
                 return f"""<CalendarTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
       </ScheduleByDay>
     </CalendarTrigger>"""
         else:  # ONCE
             return f"""<TimeTrigger>
-      <Enabled>true</Enabled>
       <StartBoundary>2024-01-01T{start_time}</StartBoundary>
+            <Enabled>true</Enabled>
     </TimeTrigger>"""
 
     def sync_tasks(self, force: bool = False):

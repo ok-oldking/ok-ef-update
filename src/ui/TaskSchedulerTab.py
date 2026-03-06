@@ -50,6 +50,8 @@ def normalize_trigger_type(raw_type: str) -> TriggerType:
     value = (raw_type or "").strip()
     lowered = value.lower()
 
+    if value in (TriggerType.CUSTOM.value,) or "custom" in lowered:
+        return TriggerType.CUSTOM
     if value in (TriggerType.DAILY.value, "2") or "daily" in lowered:
         return TriggerType.DAILY
     if value in (TriggerType.WEEKLY.value, "3") or "weekly" in lowered:
@@ -62,9 +64,24 @@ def normalize_trigger_type(raw_type: str) -> TriggerType:
     return TriggerType.DAILY
 
 
-def display_trigger_type(raw_type: str) -> str:
+def display_trigger_type(raw_type: str, task_info: Optional[ScheduleTaskInfo] = None) -> str:
     """用于 UI 展示的触发器文本，通过框架翻译"""
     trigger = normalize_trigger_type(raw_type)
+
+    # 调试：打印实际的值
+    if task_info and (task_info.interval_days > 0 or task_info.interval_hours > 0):
+        logger.debug(
+            f"Task: {task_info.name}, raw_type={raw_type}, trigger={trigger}, "
+            f"interval_days={task_info.interval_days}, interval_hours={task_info.interval_hours}"
+        )
+
+    # 如果是自定义类型，显示具体的间隔信息
+    if trigger == TriggerType.CUSTOM and task_info:
+        if task_info.interval_days > 0:
+            return og.app.tr("Custom") + f" ({task_info.interval_days} " + og.app.tr("days") + ")"
+        elif task_info.interval_hours > 0:
+            return og.app.tr("Custom") + f" ({task_info.interval_hours} " + og.app.tr("hours") + ")"
+
     # 使用框架翻译系统自动处理多语言
     return og.app.tr(trigger.value)
 
@@ -151,7 +168,7 @@ class ScheduleTaskTable(TableWidget):
         self.setItem(row, 1, status_item)
 
         # 触发类型
-        trigger_item = QTableWidgetItem(display_trigger_type(task_info.trigger_type))
+        trigger_item = QTableWidgetItem(display_trigger_type(task_info.trigger_type, task_info))
         self.setItem(row, 2, trigger_item)
 
         # 下次运行时间
@@ -198,7 +215,7 @@ class ScheduleTaskTable(TableWidget):
             name_item = self.item(row, 0)
             if name_item and name_item.text() == task_info.name:
                 self.item(row, 1).setText(display_task_status(task_info.status))
-                self.item(row, 2).setText(display_trigger_type(task_info.trigger_type))
+                self.item(row, 2).setText(display_trigger_type(task_info.trigger_type, task_info))
                 self.item(row, 3).setText(format_next_run_time(task_info.next_run_time))
 
                 # 更新开关状态
@@ -488,14 +505,21 @@ class ModifyScheduleTaskDialog(MessageBoxBase):
         )
         trigger_index = 0
         trigger_lower = (task_info.trigger_type or "").lower()
-        if trigger_lower in ("weekly", "3"):
+
+        # 如果有自定义间隔，优先使用 Custom
+        if task_info.interval_days > 1 or task_info.interval_hours > 0:
+            trigger_index = 4  # Custom
+        elif trigger_lower in ("custom",):
+            trigger_index = 4
+        elif trigger_lower in ("weekly", "3"):
             trigger_index = 1
         elif trigger_lower in ("monthly", "4", "5", "6"):
             trigger_index = 2
         elif trigger_lower in ("once", "1", "time"):
             trigger_index = 3
-        elif trigger_lower in ("custom",):
-            trigger_index = 4
+        else:
+            trigger_index = 0  # Daily 作为默认值
+
         self.trigger_combo.setCurrentIndex(trigger_index)
         self.trigger_combo.setFixedHeight(34)
         self.trigger_combo.currentIndexChanged.connect(self._on_trigger_type_changed)
