@@ -894,11 +894,11 @@ class DailyTask(BaseEfTask):
 
                 self.scroll_relative(0.5, 0.5, -3)
                 self.wait_ui_stable(refresh_interval=0.5)
-            self.back(after_sleep=2)
-            self.send_key("f", after_sleep=2)
 
             # 2 查找其他角色（不 scroll）
             if not found_target:
+                self.back(after_sleep=2)
+                self.send_key("f", after_sleep=2)
                 self.log_info(f"未找到联络对象 {target_name}，尝试其他目标")
 
                 other_results = {}
@@ -947,9 +947,21 @@ class DailyTask(BaseEfTask):
                 self.next_frame()
                 self.sleep(0.2)
             self.next_frame()
-            if not self.wait_ocr(match=find_name,box=self.box.center, time_out=2):
+            if not self.wait_ocr(match=find_name,box=self.box.top, time_out=2):
                 self.log_info(f"未找到 {find_name} 的名字,重新打开联络界面")
+                self.ensure_main()
                 continue
+            self.next_frame()
+            if chat_box := self.ocr(match=find_name, box=self.box.bottom_right):
+                self.log_info("发现干员，点击进行交互")
+                self.send_key_down("alt")
+                self.sleep(0.5)
+                self.click_box(chat_box, after_sleep=1)
+                self.next_frame()
+                self.wait_click_ocr(match=find_name, box=self.box.bottom_right, time_out=1)
+                self.send_key_up("alt")
+                self.log_info("干员联络完成")
+                return True
             self.log_info(f"找到 {find_name} 的名字，开始界面对齐")
             find_flag = self.align_ocr_or_find_target_to_center(
                 ocr_match_or_feature_name_list=find_name,
