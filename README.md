@@ -26,7 +26,7 @@
 
 ### [English Readme](README_en.md) | 中文说明
 
-**演示与教程:** [![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://youtu.be/h6P1KWjdnB4)
+**演示与教程:** [![Bilibili](https://img.shields.io/badge/Bilibili-%2300A1D6.svg?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV16PPszhEwN/)
 
 ---
 
