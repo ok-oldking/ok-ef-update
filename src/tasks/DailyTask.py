@@ -65,6 +65,7 @@ class DailyTask(DailyLiaisonMixin, DailyTradeMixin, DailyRoutineMixin, BaseEfTas
             self.ensure_main(time_out=240)
         else:
             self.ensure_main()
+        self.active_and_send_mouse_delta(activate=True,only_activate=True)
         tasks = [  # 确保在主界面
             ("送礼", self.execute_gift_task),
             ("据点兑换", self.exchange_outpost_goods),
