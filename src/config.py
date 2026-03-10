@@ -3,8 +3,9 @@ import os
 import numpy as np
 from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
+from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS
 
-version = "v0.1.5"
+version = "v0.1.6"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -40,38 +41,8 @@ def make_bottom_left_black(frame):  # 可选. 某些游戏截图时遮挡UID使�
         print(f"Error processing frame: {e}")
         return frame
 key_config_option = ConfigOption('Game Hotkey Config', {
-    # 通用部分 - 基础操作
-    'Dodge Key': 'lshift',
-    'Jump Key': 'space',
-    'Interact Key': 'f',
-    'Backpack Key': 'b',
-    'Valuables Key': 'n',
-    'Team Key': 'u',
-    
-    # 通用部分 - UI/信息
-    'Operator Key': 'c',
-    'Mission Key': 'j',
-    'Track Key': 'v',
-    'Map Key': 'm',
-    'Baker Key': 'h',
-    'Mail Key': 'k',
-    'Handbook Key': 'f8',
-    'Recruitment Key': 'f9',
-    
-    # 快捷工具
-    'Quick Tool Key': 'r',
-    
-    # 集成工业部分
-    'Industry Plan Key': 't',
-    'Place Belt Key': 'e',
-    'Place Pipeline Key': 'q',
-    'Equipment List Key': 'z',
-    'Overview Mode Key': 'capslock',
-    'Storage Mode Key': 'x',
-    'Area Build Key': 'y',
-    'Blueprint Key': 'f1',
-    'Product Icon Toggle Key': 'f4',
-}, description='In Game Hotkey Config')
+    **DEFAULT_COMMON_KEYS, **DEFAULT_INDUSTRY_KEYS
+    }, description='In Game Hotkey Config')
 
 config = {
     "debug": False,  # Optional, default: False
@@ -141,8 +112,8 @@ config = {
         "default_horizontal_variance": 0.002,  # 默认x偏移, 查找不传box的时候, 会根据coco坐标, match偏移box内的
         "default_vertical_variance": 0.002,  # 默认y偏移
         "default_threshold": 0.8,  # 默认threshold
-        "hcenter_features": ["skill_e", "pick_f", "skip_dialog_confirm"],
-        "vcenter_features": ["skill_e", "skip_dialog_confirm"],
+        "hcenter_features": ["default_link_skill", "pick_f", "skip_dialog_confirm"],
+        "vcenter_features": ["default_link_skill", "skip_dialog_confirm"],
     },
     "version": version,  # 版本
     "my_app": [

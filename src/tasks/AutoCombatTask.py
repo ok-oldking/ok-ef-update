@@ -5,7 +5,7 @@ import numpy as np
 from qfluentwidgets import FluentIcon
 from ok import TriggerTask, Logger
 from src.tasks.BaseEfTask import BaseEfTask
-
+from src.data.FeatureList import FeatureList as fL
 logger = Logger.get_logger(__name__)
 
 
@@ -71,7 +71,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
             self.handle_no_damage_number_actions()
 
             # High priority actions (E/Ult) always checked first
-            if self.use_e_skill() or self.use_ult():
+            if self.use_link_skill() or self.use_ult():
                 continue
 
             # Logic: If we meet the start trigger, we execute the ENTIRE sequence
@@ -95,7 +95,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
                             break
 
                         # High priority interrupts inside the wait loop
-                        if self.use_e_skill() or self.use_ult():
+                        if self.use_link_skill() or self.use_ult():
                             continue
 
                         # If combat ended
@@ -175,7 +175,7 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
             elif click:
                 self.perform_attack_weave()
             else:
-                self.sleep(0.03)
+                self.sleep(0.003)
 
     def is_combat_ended(self):
         """
@@ -260,9 +260,10 @@ class AutoCombatTask(BaseEfTask, TriggerTask):
                       name='lv_text')
         return len(lv) > 0
 
-    def use_e_skill(self):
-        if self.find_one('skill_e', threshold=0.7):
-            self.press_key('e')
+    def use_link_skill(self):
+        """释放连携技（从配置中读取实际键位）"""
+        if self.find_one("default_link_skill", threshold=0.7):
+            self.send_key("e")
             self.last_op_time = time.time()
             return True
         return False

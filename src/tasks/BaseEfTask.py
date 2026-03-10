@@ -78,6 +78,26 @@ class BaseEfTask(BaseTask):
         actual_key = self.key_manager.resolve_industry_key(key)
         return self.send_key(actual_key, interval=interval, down_time=down_time, after_sleep=after_sleep)
 
+    def press_combat_key(self, key: str, down_time: float = 0.02, after_sleep: float = 0, interval: int = -1):
+        """发送战斗专用部分的游戏热键。
+        
+        先从配置中查询是否有该键的自定义映射，如果没有则直接使用传入的键值。
+        
+        Args:
+            key: 按键值（如 'e' 等），系统会先检查配置中是否有映射
+            down_time: 按键按下持续时间（秒）
+            after_sleep: 发送后额外等待时间（秒）
+            interval: 按键间隔
+            
+        Returns:
+            send_key 的返回值
+            
+        Example:
+            self.press_combat_key('e', after_sleep=0.5)  # 释放连携技
+        """
+        actual_key = self.key_manager.resolve_combat_key(key)
+        return self.send_key(actual_key, interval=interval, down_time=down_time, after_sleep=after_sleep)
+
     def move_keys(self, keys, duration):
         """向当前窗口发送按键移动指令
         
@@ -104,15 +124,15 @@ class BaseEfTask(BaseTask):
         self.sleep(0.005)
         # 闪避键支持全局热键映射（默认 lshift）
         self.press_key('lshift', down_time=dodge_down_time)
-        move_thread.join(timeout=max(pre_hold + 0.02, 0.05))
+        move_thread.join(timeout=max(pre_hold + 0.002, 0.05))
         if after_sleep > 0:
             self.sleep(after_sleep)
 
-    def dodge_forward(self, pre_hold: float = 0.04, dodge_down_time: float = 0.03, after_sleep: float = 0.05):
+    def dodge_forward(self, pre_hold: float = 0.004, dodge_down_time: float = 0.003, after_sleep: float = 0.005):
         """向前闪避（W + 闪避键）。"""
         self._dodge_with_direction('w', pre_hold=pre_hold, dodge_down_time=dodge_down_time, after_sleep=after_sleep)
 
-    def dodge_backward(self, pre_hold: float = 0.04, dodge_down_time: float = 0.03, after_sleep: float = 0.05):
+    def dodge_backward(self, pre_hold: float = 0.004, dodge_down_time: float = 0.003, after_sleep: float = 0.005):
         """向后闪避（S + 闪避键）。"""
         self._dodge_with_direction('s', pre_hold=pre_hold, dodge_down_time=dodge_down_time, after_sleep=after_sleep)
 

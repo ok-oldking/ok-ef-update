@@ -1,10 +1,10 @@
-from src.tasks.BaseEfTask import BaseEfTask
 from src.tasks.AutoCombatTask import AutoCombatTask
+from src.tasks.daily.auto_battle import auto_battle
 from src.data.FeatureList import FeatureList as fL
 import re
 import time
-
-class Test(BaseEfTask):
+battle_end_list=[fL.battle_end,fL.battle_end_small,fL.battle_end_big]
+class Test(AutoCombatTask):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,87 +50,49 @@ class Test(BaseEfTask):
         self.wait_click_ocr(match=[re.compile(i) for i in ["会客", "培养", "制造"]], time_out=5, after_sleep=2,log=True)
 
     def run(self):
-        raw_skill_config = self.config.get("技能释放", "123")
-        start_trigger_count = self.config.get("启动技能点数", 2)
-        skill_sequence = self._parse_skill_sequence(raw_skill_config)
-
-        while True:
-            if not self.in_combat(required_yellow=1):
-                self.sleep(0.1)
-                continue
-
-            self.log_info("进入战斗!", notify=True)
-
-            if self.debug:
-                self.screenshot('enter_combat')
-
-            self.click(key='middle')
-
-            while True:
-                skill_count = self.get_skill_bar_count()
-
-                # 使用新的退出检查方法
-                if self.is_combat_ended():
-                    if self.debug:
-                        self.screenshot('out_of_combat')
-                    self.log_info("退出战斗!", notify=True)
-                    self.log_info("退出战斗主循环")
+        # self.ensure_main()
+        # self.press_key('f8',after_sleep=2)
+        # self.wait_click_ocr(match=re.compile("索引"), time_out=5, after_sleep=2,box=self.box.top, log=True)
+        # self.wait_click_ocr(match=re.compile("前往"), time_out=5, after_sleep=2,box=self.box.right, log=True)
+        # self.wait_click_ocr(match=re.compile("进入"), time_out=5, after_sleep=2, box=self.box.bottom_right, log=True)
+        # self.wait_click_ocr(match=re.compile("进入"), time_out=5, after_sleep=2, box=self.box.bottom_right, log=True)
+        # start_time= time.time()
+        # while not self.wait_ocr(match=re.compile("撤离"), time_out=1, box=self.box.top_left, log=True):
+        #     if time.time() - start_time > 30:
+        #         self.log_info("等待超时，未检测到撤离")
+        #         return
+        # while not self.wait_ocr(match=re.compile("触碰"), time_out=1,  box=self.box.bottom_right, log=True):
+        #     self.move_keys('w',duration=0.25)
+        # self.press_key("f")
+        # start_time=None
+        # while True:
+        #     # 未进入战斗时短暂等待，进入后由 auto_battle 执行完整战斗流程
+        #     if start_time and time.time() - start_time > 20:
+        #         break
+        #     battle_done = auto_battle(self, config=self.config)
+        #     if not battle_done:
+        #         self.sleep(0.1)
+        #     else:
+        #         start_time=time.time()
+        self.to_end()
+    def to_end(self):
+        key_list = ['w','a','s','d']
+        for i in range(len(key_list)):
+            key_list.append(key_list[i]+key_list[i+1 if i+1<len(key_list) else 0])
+        search_box = self.box_of_screen((1920 - 1550) / 1920, 0, 1550 / 1920, (1080 - 150) / 1080)
+        if not self.find_one(battle_end_list,box=search_box,threshold=0.5):
+            for key in key_list:
+                self.move_keys(key, duration=0.01)
+                self.click(key='middle',after_sleep=4)
+                if self.find_one(battle_end_list, box=search_box, threshold=0.5):
                     break
-
-                self.handle_no_damage_number_actions()
-
-                if self.use_e_skill() or self.use_ult():
-                    continue
-
-                if skill_count >= start_trigger_count:
-                    self.log_info(f"Triggering sequence at {skill_count} points")
-
-                    for skill_key in skill_sequence:
-                        if not self.in_combat():
-                            break
-
-                        while True:
-                            current_points = self.get_skill_bar_count()
-                            time_since_last_skill = time.time() - self.last_skill_time
-
-                            if current_points >= 1 and time_since_last_skill >= 1.0:
-                                break
-
-                            if self.use_e_skill() or self.use_ult():
-                                continue
-
-                            if current_points < 0 and (self.ocr_lv() or not self.in_team()):
-                                break
-
-                            self.handle_no_damage_number_actions()
-                            self.perform_attack_weave()
-                            self.sleep(0.05)
-
-                        if not self.in_combat():
-                            break
-
-                        self.send_key(skill_key)
-                        self.last_skill_time = time.time()
-                        self.last_op_time = time.time()
-                        self.log_info(f"Used skill {skill_key}")
-
-                    self.log_info("Sequence finished, returning to charge mode")
-                else:
-                    self.perform_attack_weave()
-
-                self.sleep(0.05)
-
-    perform_attack_weave = AutoCombatTask.perform_attack_weave
-    _parse_skill_sequence = AutoCombatTask._parse_skill_sequence
-    use_ult = AutoCombatTask.use_ult
-    wait_in_combat = AutoCombatTask.wait_in_combat
-    is_combat_ended = AutoCombatTask.is_combat_ended
-    _check_single_exit_condition = AutoCombatTask._check_single_exit_condition
-    _check_center_area_has_number = AutoCombatTask._check_center_area_has_number
-    handle_no_damage_number_actions = AutoCombatTask.handle_no_damage_number_actions
-    use_e_skill = AutoCombatTask.use_e_skill
-    ocr_lv = AutoCombatTask.ocr_lv
-    in_combat = AutoCombatTask.in_combat
-    in_team = AutoCombatTask.in_team
-    get_skill_bar_count = AutoCombatTask.get_skill_bar_count
-    check_is_pure_color_in_4k = AutoCombatTask.check_is_pure_color_in_4k
+        self.align_ocr_or_find_target_to_center(
+            battle_end_list, ocr=False, box=search_box, max_time=5,only_x=True, raise_if_fail=False, threshold=0.5
+        )
+        while self.align_ocr_or_find_target_to_center(battle_end_list,ocr=False,box=search_box, only_x=True,threshold=0.5,tolerance=100):
+            if self.wait_ocr(match=re.compile("领取"), time_out=1, box=self.box.bottom_right):
+                self.sleep(0.5)
+                self.press_key("f",down_time=0.2)
+                break
+            else:
+                self.move_keys('w', duration=0.25)
