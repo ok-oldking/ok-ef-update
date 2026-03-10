@@ -1,6 +1,7 @@
 import random
 import re
 import time
+import threading
 import cv2
 import imagehash
 import numpy as np
@@ -85,6 +86,35 @@ class BaseEfTask(BaseTask):
             duration: 按键持续时间（秒），例如 0.5
         """
         move_keys(self.hwnd.hwnd, keys, duration)
+
+    def _dodge_with_direction(self, direction_key: str, pre_hold: float = 0.004,
+                              dodge_down_time: float = 0.003, after_sleep: float = 0.005):
+        """按住方向键后触发闪避键。
+
+        Args:
+            direction_key: 方向键，通常为 'w'（前）或 's'（后）
+            pre_hold: 方向键预按时长（秒）
+            dodge_down_time: 闪避键按下时长（秒）
+            after_sleep: 动作结束后等待时长（秒）
+        """
+        # WASD 移动统一走 move_keys（src/interaction/Key.py）
+        # 与闪避键并发执行，保证“同时”触发
+        move_thread = threading.Thread(target=self.move_keys, args=(direction_key, pre_hold), daemon=True)
+        move_thread.start()
+        self.sleep(0.005)
+        # 闪避键支持全局热键映射（默认 lshift）
+        self.press_key('lshift', down_time=dodge_down_time)
+        move_thread.join(timeout=max(pre_hold + 0.02, 0.05))
+        if after_sleep > 0:
+            self.sleep(after_sleep)
+
+    def dodge_forward(self, pre_hold: float = 0.04, dodge_down_time: float = 0.03, after_sleep: float = 0.05):
+        """向前闪避（W + 闪避键）。"""
+        self._dodge_with_direction('w', pre_hold=pre_hold, dodge_down_time=dodge_down_time, after_sleep=after_sleep)
+
+    def dodge_backward(self, pre_hold: float = 0.04, dodge_down_time: float = 0.03, after_sleep: float = 0.05):
+        """向后闪避（S + 闪避键）。"""
+        self._dodge_with_direction('s', pre_hold=pre_hold, dodge_down_time=dodge_down_time, after_sleep=after_sleep)
 
     def move_to_target_once(self, ocr_obj, max_step=100, min_step=20, slow_radius=200):
         """根据目标位置执行一次视角/鼠标对准
@@ -645,6 +675,8 @@ class BaseEfTask(BaseTask):
             bool: True表示处于主界面，False表示需要继续处理
         """
         self.next_frame()  # 确保拿到最新的截图
+        if not self._logged_in:
+            self.active_and_send_mouse_delta(activate=True, only_activate=True)  # 激活窗口，获取最新状态
         if self.in_world():
             self._logged_in = True
             return True
