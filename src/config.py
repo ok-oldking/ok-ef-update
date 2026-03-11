@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS
 
-version = "v0.1.14"
+version = "v0.1.16"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -94,7 +94,7 @@ config = {
         },
     },
     "screenshots_folder": "screenshots",  # 截图存放目录, 每次重新启动会清空目录
-    "yolo": {"model_path": "assets/models/yolo/best.pt"},  # YOLO 模型路径（相对项目根目录或绝对路径）
+    "yolo": {"model_path": "assets/models/yolo/best.onnx"},  # YOLO 模型路径（相对项目根目录或绝对路径）
     "gui_title": "ok-ef",  # 窗口名
     "template_matching": {  # 可选, 如使用OpenCV的模板匹配
         "coco_feature_json": os.path.join("assets", "coco_detection.json"),
