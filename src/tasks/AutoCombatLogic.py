@@ -7,7 +7,7 @@ class AutoCombatLogic:
     def __init__(self, task: BaseEfTask):
         self.task = task
 
-    def run(self):
+    def run(self, start_sleep: float = None):
         task = self.task
         in_combat_check = task.in_combat(required_yellow=1)
         task.log_info(f"进入战斗检查: in_combat={in_combat_check}")
@@ -26,6 +26,10 @@ class AutoCombatLogic:
             task.screenshot('enter_combat')
 
         task.click(key='middle')
+        if start_sleep is not None:
+            task.sleep(start_sleep)
+        else:
+            task.sleep(task.config.get("进入战斗后的初始等待时间", 1))
 
         while True:
             skill_count = task.get_skill_bar_count()

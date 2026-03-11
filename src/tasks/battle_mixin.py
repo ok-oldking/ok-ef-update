@@ -198,7 +198,7 @@ class BattleMixin(BaseEfTask):
             else:
                 consecutive_matches = 0
         return False
-    def auto_battle(self):
+    def auto_battle(self,start_sleep: float = None):
         end_time = None
         start_time = time.time()
         while True:
@@ -209,7 +209,7 @@ class BattleMixin(BaseEfTask):
             if end_time and time.time() - end_time > 15.0:
                 self.log_info("战斗完成")
                 return True
-            battle_done = AutoCombatLogic(self).run()
+            battle_done = AutoCombatLogic(self).run(start_sleep=start_sleep)
             if not battle_done:
                 self.sleep(0.1)
             else:
