@@ -4,7 +4,7 @@ from qfluentwidgets import FluentIcon
 
 from src.data.characters import all_list
 from src.data.characters_utils import get_contact_list_with_feature_list
-from src.data.world_map import areas_list
+from src.data.world_map import areas_list, stages_list
 from src.tasks.daily.common import build_name_patterns
 from src.tasks.daily.liaison_mixin import DailyLiaisonMixin
 from src.tasks.daily.routine_mixin import DailyRoutineMixin
@@ -27,8 +27,22 @@ class DailyTask(DailyLiaisonMixin, DailyTradeMixin, DailyRoutineMixin):
             buy_sell[f"{area}买入价"] = 900
             buy_sell[f"{area}卖出价"] = 4500
             buy_sell[area] = True
+        self.stages_list=stages_list
         self.default_config.update(buy_sell)
         self.default_config.update({"优先送礼对象": list(self.can_contact_dict.keys())[0]})
+        self.default_config.update({
+            "体力本": "干员经验",
+            "技能释放": "123",
+            "启动技能点数": 2,
+            "后台结束战斗通知": True,
+            "无数字操作间隔": 6
+        })
+        self.config_description.update({
+            "技能释放": "满技能时, 开始释放技能, 如123, 建议只放3个技能",
+            "启动技能点数": "当技能点达到该数值时，开始执行技能序列, 1-3",
+            "平A间隔": "平A点击间隔(秒), 越小越快, 建议 0.08~0.15",
+            "无数字操作间隔": "战斗中周期触发锁敌+向前闪避的最小间隔(秒，最少6秒)",
+        })
         self.default_config.update({
             "送礼任务最多尝试次数": 2,
             "送礼": True,
@@ -40,8 +54,17 @@ class DailyTask(DailyLiaisonMixin, DailyTradeMixin, DailyRoutineMixin):
             "尝试仅收培育室": False,
             "收集线索": True,
             "买卖货": True,
+            "刷体力": True,
             "日常奖励": True,
         })
+        self.config_type["体力本"] = {"type": "drop_down", "options": self.stages_list}
+        self.max_half_time = 3
+        self.lv_regex = re.compile(r"(?i)lv|\d{2}")
+        self.last_op_time = 0
+        self.last_skill_time = 0
+        self.exit_check_count = 0  # 退出验证计数器，需要連续捐捕 2 次
+        self._last_exit_fail_skill_count = None
+        self.last_no_number_action_time = 0
         self.config_type["优先送礼对象"] = {"type": "drop_down", "options": list(self.can_contact_dict.keys())}
         self.config_description.update({"尝试仅收培育室": '前置是启用收信用'})
         self.add_exit_after_config()
@@ -73,6 +96,7 @@ class DailyTask(DailyLiaisonMixin, DailyTradeMixin, DailyRoutineMixin):
             ("收信用", self.collect_credit),
             ("收集线索", self.collect_clue),
             ("买卖货", self.buy_sell),
+            ("刷体力",self.battle),
             ("日常奖励", self.claim_daily_rewards),
         ]
         all_fail_tasks = []

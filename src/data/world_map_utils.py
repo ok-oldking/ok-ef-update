@@ -1,4 +1,4 @@
-from src.data.world_map import outpost_dict, goods_dict
+from src.data.world_map import outpost_dict, goods_dict, stages_dict
 
 
 def get_area_by_outpost_name(outpost_name: str) -> str:
@@ -27,3 +27,8 @@ def get_goods_by_outpost_name(outpost_name: str) -> list[str]:
         if outpost_name in outposts:
             return goods_dict.get(area, [])
     return []
+def get_stage_category(stage_name):
+    for category, stages in stages_dict.items():
+        if stage_name in stages:
+            return category
+    return None

@@ -415,7 +415,9 @@ class DailyRoutineMixin(BaseEfTask):
             self.wait_pop_up(after_sleep=2)
 
         self.log_info(f"{outpost_name} 兑换操作完成")
-
+    def test_ocr_full(self):
+        self.next_frame()
+        self.ocr(log=True)
     def test_ocr(self):
         box1 = self.box_of_screen(1749 / 1920, 107 / 1080, 1789 / 1920, 134 / 1080)
         box2 = self.box_of_screen(

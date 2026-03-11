@@ -2,7 +2,7 @@
 import time
 from typing import TYPE_CHECKING, Callable
 
-from src.tasks.AutoCombatTask import AutoCombatLogic
+from src.tasks.AutoCombatLogic import AutoCombatLogic
 
 if TYPE_CHECKING:
     from src.tasks.BaseEfTask import BaseEfTask
