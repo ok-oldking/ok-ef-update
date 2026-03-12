@@ -1,18 +1,22 @@
-<div align="center">
-  <h1 align="center">
-    <img src="icons/icon.png" width="200" alt="ok-ef logo"/>
-    <br/>
-    ok-ef
-  </h1> 
+<p align="center">
+  <img 
+    src="icons/icon.png"
+    alt="ok-ef game automation tool logo"
+    width="256"
+    height="256"
+  />
+</p>
 
-  <p>
-    一个基于图像识别的终末地自动化程序，支持后台运行，基于 <a href="https://github.com/ok-oldking/ok-script">ok-script</a> 开发。
-    <br />
-    An image-recognition-based automation tool for End Field, with background mode support, developed with <a href="https://github.com/ok-oldking/ok-script">ok-script</a>.
-  </p>
+<h1 align="center">ok-ef</h1>
 
-  <p><i>通过模拟 Windows 用户接口进行操作，无内存读取、无文件修改</i></p>
-</div>
+<p>
+一个基于图像识别的终末地自动化程序，部分功能支持后台运行，基于 <a href="https://github.com/ok-oldking/ok-script">ok-script</a> 开发。
+<br />
+An image-recognition-based automation tool for End Field, with background mode support, developed with <a href="https://github.com/ok-oldking/ok-script">ok-script</a>.
+</p>
+
+<p><i>通过模拟 Windows 用户接口进行操作，无内存读取、无文件修改</i></p>
+
 
 <!-- Badges -->
 <div align="center">
@@ -26,7 +30,8 @@
 
 ### [English Readme](README_en.md) | 中文说明
 
-**演示与教程:** [![Bilibili](https://img.shields.io/badge/Bilibili-%2300A1D6.svg?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV16PPszhEwN/)
+**演示与教程:
+** [![Bilibili](https://img.shields.io/badge/Bilibili-%2300A1D6.svg?style=for-the-badge&logo=bilibili&logoColor=white)](https://www.bilibili.com/video/BV16PPszhEwN/)
 
 ---
 
@@ -45,15 +50,17 @@
 
 ## 🚀 快速开始
 
-1.  **下载安装包**：从下方的“下载渠道”中选择一个，下载最新的 `ok-ef-win32-China-setup.exe` 安装文件。
-2.  **安装程序**：双击 `ok-ef-win32-China-setup.exe` 文件，并按照安装向导的提示完成安装。
-3.  **运行程序**：安装完成后，从桌面快捷方式或开始菜单启动 `ok-ef` 即可。
+1. **下载安装包**：从下方的“下载渠道”中选择一个，下载最新的 `ok-ef-win32-China-setup.exe` 安装文件。
+2. **安装程序**：双击 `ok-ef-win32-China-setup.exe` 文件，并按照安装向导的提示完成安装。
+3. **运行程序**：安装完成后，从桌面快捷方式或开始菜单启动 `ok-ef` 即可。
 
 ## 📥 下载渠道
 
-*   **[GitHub](https://github.com/ok-oldking/ok-end-field/releases)**: 官方发布页，全球访问速度快。（**请下载 `setup.exe` 安装包，而不是 `Source Code` 源码压缩包**）
-*   **[Mirror酱](https://mirrorchyan.com/zh/projects?rid=ok-end-field&source=ok-ef-readme)**: 国内镜像，下载可能需要购买其平台的 CD-KEY。
-*   **[夸克网盘](https://pan.quark.cn/s/a1052cec4d13)**: 国内网盘，免费，但需要注册并使用其客户端下载。
+* **[GitHub](https://github.com/ok-oldking/ok-end-field/releases)**: 官方发布页，全球访问速度快。（**请下载 `setup.exe`
+  安装包，而不是 `Source Code` 源码压缩包**）
+* **[Mirror酱](https://mirrorchyan.com/zh/projects?rid=ok-end-field&source=ok-ef-readme)**: 国内镜像，下载可能需要购买其平台的
+  CD-KEY。
+* **[夸克网盘](https://pan.quark.cn/s/a1052cec4d13)**: 国内网盘，免费，但需要注册并使用其客户端下载。
 
 ## ✨ 主要功能
 
@@ -63,7 +70,7 @@
 <img width="3200" height="2053"  src="https://github.com/user-attachments/assets/407b82fd-7415-4261-b584-5a41d557eb71" />
 <img width="3200" height="2053"  src="https://github.com/user-attachments/assets/b31a76f8-f25a-4b7e-8b3f-96ac2dbe4b17" />
 
-##  功能一览（按任务类型）
+## 功能一览（按任务类型）
 
 ### 一次性任务（手动点一次执行）
 
@@ -81,8 +88,8 @@
 - 自动跳过剧情（识别“跳过/确认”流程）
 
 ### 定时任务（Windows任务计划程序管理）
-- 可自行选择合适的任务加入计划，Windows自行启动
 
+- 可自行选择合适的任务加入计划，Windows自行启动
 
 ## 运行要求与推荐设置
 
@@ -95,24 +102,21 @@
 
 ---
 
-
-
-
 ## 🔧 疑难解答 (Troubleshooting)
 
 如果遇到问题，请在提问前按以下步骤逐一排查：
 
-1.  **安装路径**：请确保软件安装在**纯英文路径**下（例如 `D:\Games\ok-ef`），不要安装在 `C:\Program Files` 或包含中文字符的文件夹中。
-2.  **杀毒软件**：将软件的安装目录添加到您的杀毒软件（包括 Windows Defender）的**信任区或白名单**中，以防文件被误删或拦截。
-3.  **显示设置**：
-    *   关闭所有显卡滤镜（如 NVIDIA Game Filter）和锐化功能，除非部分功能要求。
-    *   使用游戏默认的亮度设置。
-    *   关闭任何在游戏画面上显示信息的叠加层（如 MSI Afterburner、Fraps 等显示的帧率）。
-4.  **自定义按键**：如果您修改了游戏内的默认按键，请务必在 `ok-ef` 的设置中进行同步配置。仅支持设置中列出的按键。
-5.  **软件版本**：检查并确保您使用的是最新版本的 `ok-ef`。
-6.  **游戏性能**：请确保游戏能稳定在 **60 FPS** 运行。如果帧率不稳定，请尝试降低游戏画质或分辨率。
-7.  **游戏断线**：如频繁遇到与服务器断开连接的问题，可以尝试先手动打开游戏运行5分钟后再启动本工具，或在断线后直接重新登录，不要退出游戏。
-8.  **寻求帮助**：如果以上步骤都无法解决您的问题，请通过社区渠道提交详细的错误报告。
+1. **安装路径**：请确保软件安装在**纯英文路径**下（例如 `D:\Games\ok-ef`），不要安装在 `C:\Program Files` 或包含中文字符的文件夹中。
+2. **杀毒软件**：将软件的安装目录添加到您的杀毒软件（包括 Windows Defender）的**信任区或白名单**中，以防文件被误删或拦截。
+3. **显示设置**：
+    * 关闭所有显卡滤镜（如 NVIDIA Game Filter）和锐化功能，除非部分功能要求。
+    * 使用游戏默认的亮度设置。
+    * 关闭任何在游戏画面上显示信息的叠加层（如 MSI Afterburner、Fraps 等显示的帧率）。
+4. **自定义按键**：如果您修改了游戏内的默认按键，请务必在 `ok-ef` 的设置中进行同步配置。仅支持设置中列出的按键。
+5. **软件版本**：检查并确保您使用的是最新版本的 `ok-ef`。
+6. **游戏性能**：请确保游戏能稳定在 **60 FPS** 运行。如果帧率不稳定，请尝试降低游戏画质或分辨率。
+7. **游戏断线**：如频繁遇到与服务器断开连接的问题，可以尝试先手动打开游戏运行5分钟后再启动本工具，或在断线后直接重新登录，不要退出游戏。
+8. **寻求帮助**：如果以上步骤都无法解决您的问题，请通过社区渠道提交详细的错误报告。
 9. **游戏/软件语言** 本软件目前部分功能仅支持简体中文，不支持其他语言。
 
 ---
@@ -143,8 +147,8 @@ python main_debug.py
 ok-ef.exe -t 1 -e
 ```
 
-*   `-t` 或 `--task`: 启动后自动执行第 N 个任务。`1` 代表任务列表中的第一个。
-*   `-e` 或 `--exit`: 任务执行完毕后自动退出程序。
+* `-t` 或 `--task`: 启动后自动执行第 N 个任务。`1` 代表任务列表中的第一个。
+* `-e` 或 `--exit`: 任务执行完毕后自动退出程序。
 
 ### 开发调试与测试
 
@@ -160,11 +164,13 @@ python -m unittest tests/TestEssenceRecognizer.py
 
 ## 💬 加入我们
 
-*   **QQ 交流群**: `940581952` (入群答案: `终末地`)
-*   **QQ 频道**: [点击加入](https://pd.qq.com/s/djmm6l44y) (群满或获取最新资讯)
-*   **开发者群**: `1079581542` ( **注意**: 此群仅面向有开发能力、拥有Github账号、希望参与贡献的开发者，入群前请确保您已能够从源码成功运行项目。)
+* **QQ 交流群**: `940581952` (入群答案: `终末地`)
+* **QQ 频道**: [点击加入](https://pd.qq.com/s/djmm6l44y) (群满或获取最新资讯)
+* **开发者群**: `1079581542` ( **注意**:
+  此群仅面向有开发能力、拥有Github账号、希望参与贡献的开发者，入群前请确保您已能够从源码成功运行项目。)
 
-本项目基于 [ok-script](https://github.com/ok-oldking/ok-script) 框架开发，简单易维护。欢迎有兴趣的开发者使用 [ok-script](https://github.com/ok-oldking/ok-script) 开发您自己的自动化项目。
+本项目基于 [ok-script](https://github.com/ok-oldking/ok-script)
+框架开发，简单易维护。欢迎有兴趣的开发者使用 [ok-script](https://github.com/ok-oldking/ok-script) 开发您自己的自动化项目。
 
 ## 🔗 使用ok-script的项目：
 
@@ -178,13 +184,15 @@ python -m unittest tests/TestEssenceRecognizer.py
 * 二重螺旋 [https://github.com/BnanZ0/ok-duet-night-abyss](https://github.com/BnanZ0/ok-duet-night-abyss)
 * 白荆回廊(停止更新) [https://github.com/ok-oldking/ok-baijing](https://github.com/ok-oldking/ok-baijing)
 
-
 ## ❤️ 赞助与致谢
 
 ### 赞助商 (Sponsors)
-*   **EXE 签名**: Free code signing provided by [SignPath.io](https://signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+* **EXE 签名**: Free code signing provided by [SignPath.io](https://signpath.io/), certificate
+  by [SignPath Foundation](https://signpath.org/).
 
 ### 致谢
-*   [ok-oldking/OnnxOCR](https://github.com/ok-oldking/OnnxOCR)
-*   [zhiyiYo/PyQt-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets)
-*   [Toufool/AutoSplit](https://github.com/Toufool/AutoSplit)
+
+* [ok-oldking/OnnxOCR](https://github.com/ok-oldking/OnnxOCR)
+* [zhiyiYo/PyQt-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets)
+* [Toufool/AutoSplit](https://github.com/Toufool/AutoSplit)

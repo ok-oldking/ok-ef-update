@@ -31,6 +31,7 @@ class DeliveryTask(BaseEfTask):
     """运输委托自动化任务类 - 处理游戏中的送货操作"""
 
     # 配置键名常量
+    CFG_TARGET_TICKET_NUM="目标券数"
     CFG_SCROLL_ENABLE = "是否启用滚动放大视角"
     CFG_TEST_TARGET = "选择测试对象"
     CFG_ONLY_ACCEPT = "仅接取"
@@ -46,7 +47,7 @@ class DeliveryTask(BaseEfTask):
         super().__init__(*args, **kwargs)
         self.default_config = {"_enabled": True}
         self.name = "自动送货"
-        self.description = "仅武陵7.31w送货,教程视频 BV1LLc7zFEF9"
+        self.description = "仅武陵7.98w/7.31w送货,教程视频 BV1LLc7zFEF9"
         self.support_schedule_task = True
         self.ends = ["常沄", "资源", "彦宁", "齐纶"]
         self.config_description = {
@@ -58,6 +59,7 @@ class DeliveryTask(BaseEfTask):
         self.default_config.update(
             {
                 self.CFG_TUTORIAL: "https://www.bilibili.com/video/BV1LLc7zFEF9",
+                self.CFG_TARGET_TICKET_NUM: "79800",
                 self.CFG_TO_DELIVERY_POINT: "36,14",
                 "常沄": "14,108,64,109,60",
                 "资源": "14,108,64,109",
@@ -72,6 +74,10 @@ class DeliveryTask(BaseEfTask):
         self.config_type[self.CFG_TEST_TARGET] = {
             "type": "drop_down",
             "options": [self.TEST_NONE, self.CFG_TO_DELIVERY_POINT] + self.ends + [self.TEST_FULL_CYCLE],
+        }
+        self.config_type[self.CFG_TARGET_TICKET_NUM] = {
+            "type": "drop_down",
+            "options": ["79800", "73100"],
         }
         self.lv_regex = re.compile(r"(?i)lv|\d{2}")
         self.last_target = None
@@ -333,6 +339,7 @@ class DeliveryTask(BaseEfTask):
                                 "易损" in row.elems[2].name
                                 and "不易损" not in row.elems[2].name
                         ):
+                            target_num=self.config.get(self.CFG_TARGET_TICKET_NUM)
                             x, y, to_x, to_y = row.box
                             box = self.box_of_screen(
                                 x / self.width,
@@ -355,7 +362,9 @@ class DeliveryTask(BaseEfTask):
                                     fL.wuling_7_31w,
                                     fL.wuling_7_31w_dark,
                                 ]
-
+                            if target_num == "79800":
+                                for i in range(len(feature_list)):
+                                    feature_list[i] = feature_list[i].replace("7_31w", "7_98w")
                             result = None
                             for feature_name in feature_list:
                                 result = self.find_feature(
@@ -469,27 +478,27 @@ class DeliveryTask(BaseEfTask):
         self.click(result, after_sleep=2)
 
         if not self.wait_click_ocr(
-                match="标记显示管理", box=self.box.bottom_left, time_out=10, log=True,after_sleep=2
+                match="标记显示管理", box=self.box.bottom_left, time_out=10, log=True, after_sleep=2
         ):
             return False
 
         if not self.wait_click_ocr(
-                match="清空选中", box=self.box.bottom_left, time_out=10, log=True,after_sleep=2
+                match="清空选中", box=self.box.bottom_left, time_out=10, log=True, after_sleep=2
         ):
             return False
 
         self.back(after_sleep=2)
-        result=None
+        result = None
         for _ in range(8):
             result = self.find_feature(feature_name="transfer_point", box=self.box.top,
-                                    threshold=0.8)
+                                       threshold=0.8)
             if result:
                 break
             self.next_frame()
-            self.scroll_relative(0.5,0.5, -5)
+            self.scroll_relative(0.5, 0.5, -5)
         if not result:
             return False
-        self.click(result,after_sleep=2)
+        self.click(result, after_sleep=2)
 
         result = self.wait_ocr(match="传送", box=self.box.bottom_right, time_out=10, log=True)
         if not result:
@@ -609,11 +618,12 @@ class DeliveryTask(BaseEfTask):
                 else:
                     if not self.config.get(self.CFG_ONLY_DELIVER):
                         self.other_run()
-                        self.wait_click_ocr(match=re.compile("送达"), box=self.box.bottom_right, settle_time=4, time_out=10,
+                        self.wait_click_ocr(match=re.compile("送达"), box=self.box.bottom_right, settle_time=4,
+                                            time_out=10,
                                             after_sleep=10, log=True)
-                    success=None
+                    success = None
                     for _ in range(3):
-                        success=self.task_to_transfer_point()
+                        success = self.task_to_transfer_point()
                         if success:
                             break
                     if not success:
