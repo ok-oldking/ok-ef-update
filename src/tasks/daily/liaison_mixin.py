@@ -521,8 +521,8 @@ class DailyLiaisonMixin(BattleMixin):
             self.log_info("尚未实现能量淤积点功能",notify=True)
     def battle_space(self,left_ticket,category_name):
         self.wait_click_ocr(match=re.compile("进入"), time_out=5, after_sleep=2, box=self.box.bottom_right, log=True)
-        if self.wait_click_ocr(match=re.compile("离开"), time_out=5, box=self.box.bottom_right, log=True):
-            self.log_info("没有进入战斗，可能是因为已经完成了所有挑战")
+        if self.wait_click_ocr(match=re.compile("取消"), time_out=5, box=self.box.bottom_right, log=True):
+            self.log_info("没有进入战斗，可能是因为已经没理智了")
             return True
         enter_bool = False
         battle_bool=False
@@ -603,12 +603,12 @@ class DailyLiaisonMixin(BattleMixin):
         return self.auto_battle(start_sleep=start_sleep)
     def to_end(self):
         search_box = self.box_of_screen((1920 - 1550) / 1920, 0, 1550 / 1920, (1080 - 150) / 1080)
-        for _ in range(5):
+        for _ in range(9):
             if self.yolo_detect(fL.battle_end, box=search_box):
                 break
             self.click(key="middle", after_sleep=2)
-            self.move_keys('a', duration=0.01)
-            self.sleep(2)
+            self.move_keys("aw", duration=0.1)
+            self.sleep(1)
 
         self.align_ocr_or_find_target_to_center(
             fL.battle_end,
@@ -691,11 +691,10 @@ class DailyLiaisonMixin(BattleMixin):
         # 预测下一轮是否还能继续
         next_sum = sum_ticket_number - need_ticket_number 
         self.log_info("预测下一轮消耗理智: {}, 预测下一轮剩余理智: {}".format(need_ticket_number, next_sum))
-        
+
         if next_sum < 0:
             self.log_info("下一轮理智不足，无法继续")
             return 0
         else:   
-       # 返回本轮剩余理智，不返回next_sum，因为减耗只用于判断下一轮可否继续
+            # 返回本轮剩余理智，不返回next_sum，因为减耗只用于判断下一轮可否继续
             return sum_ticket_number
-

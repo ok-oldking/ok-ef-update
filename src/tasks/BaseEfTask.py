@@ -22,7 +22,7 @@ from src.interaction.Key import move_keys
 from src.interaction.Mouse import active_and_send_mouse_delta, move_to_target_once, run_at_window_pos
 from src.interaction.ScreenPosition import ScreenPosition
 from src.interaction.KeyConfig import KeyConfigManager
-from src.OnnxYolo8Detect import OnnxYolo8Detect
+from src.OpenVinoYolo8Detect import OpenVinoYolo8Detect
 from src.config import config as app_config
 
 TOLERANCE = 50
@@ -53,7 +53,7 @@ class BaseEfTask(BaseTask):
                 yolo_config = app_config.get("yolo", {})
                 model_path = yolo_config.get("model_path", "models/yolo/best.onnx")
 
-                self._detector = OnnxYolo8Detect(weights=model_path)
+                self._detector = OpenVinoYolo8Detect(weights=model_path)
 
             finally:
                 self._detector_loading = False
@@ -277,7 +277,6 @@ class BaseEfTask(BaseTask):
             results.append(new_box)
 
         self.log_info(f"yolo_detect: filtered detections count = {len(results)}")
-            
 
         return sorted(results, key=lambda item: item.confidence, reverse=True)
 

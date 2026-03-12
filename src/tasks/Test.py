@@ -146,8 +146,8 @@ class Test(BattleMixin):
             if self.yolo_detect(fL.battle_end, box=search_box):
                 break
             self.click(key="middle", after_sleep=2)
-            self.move_keys('aw', duration=0.01)
-            self.sleep(2)
+            self.move_keys('aw', duration=0.1)
+            self.sleep(1)
 
         self.align_ocr_or_find_target_to_center(
             fL.battle_end,
