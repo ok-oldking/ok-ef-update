@@ -611,14 +611,14 @@ class DailyLiaisonMixin(BattleMixin):
     def to_end(self):
         search_box = self.box_of_screen((1920 - 1550) / 1920, 0, 1550 / 1920, (1080 - 150) / 1080)
         for _ in range(9):
-            if self.yolo_detect(fL.battle_end, box=search_box):
+            if self.yolo_detect("battle_end", box=search_box):
                 break
             self.click(key="middle", after_sleep=2)
             self.move_keys("aw", duration=0.1)
             self.sleep(1)
 
         self.align_ocr_or_find_target_to_center(
-            fL.battle_end,
+            "battle_end",
             ocr=False,
             use_yolo=True,
             box=search_box,
@@ -628,7 +628,7 @@ class DailyLiaisonMixin(BattleMixin):
             threshold=0.5,
         )
         start_time = time.time()
-        while self.align_ocr_or_find_target_to_center(fL.battle_end, ocr=False, use_yolo=True, box=search_box,
+        while self.align_ocr_or_find_target_to_center("battle_end", ocr=False, use_yolo=True, box=search_box,
                                                       only_x=True, threshold=0.5, tolerance=100):
             if time.time() - start_time > 60:
                 return False
