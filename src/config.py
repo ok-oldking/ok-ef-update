@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS
 
-version = "v0.1.21"
+version = "v0.1.22"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -113,7 +113,7 @@ config = {
         ["src.tasks.WarehouseTransferTask", "WarehouseTransferTask"],
         ["src.tasks.DeliveryTask", "DeliveryTask"],
         ["src.tasks.EssenceScanTask", "EssenceScanTask"],
-        ["src.tasks.Test", "Test"],
+        ["src.tasks.BattleTask", "BattleTask"],
         ["src.tasks.PeriodicScreenshotTask", "PeriodicScreenshotTask"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
     ],
