@@ -98,7 +98,7 @@ class DailyTask(DailyLiaisonMixin, DailyTradeMixin, DailyRoutineMixin,DailyShopM
             ("造装备", self.make_weapon),
             ("收信用", self.collect_credit),
             ("收集线索", self.collect_clue),
-            ("买信用商店",self.credit_shop()),
+            ("买信用商店",self.credit_shop),
             ("买卖货", self.buy_sell),
             ("刷体力", self.battle),
             ("日常奖励", self.claim_daily_rewards),
