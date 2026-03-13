@@ -19,7 +19,7 @@ class DailyTask(DailyLiaisonMixin, DailyTradeMixin, DailyRoutineMixin,DailyShopM
         super().__init__(*args, **kwargs)
         self.span_box = None
         self.name = "日常任务"
-        self.description = "一键收菜"
+        self.description = "一键收菜\n反复按esc请前往设置调整主界面单次动作后延迟，建议1.5秒以上"
         self.icon = FluentIcon.SYNC
         self.support_schedule_task = True
         self.can_contact_dict = get_contact_list_with_feature_list()

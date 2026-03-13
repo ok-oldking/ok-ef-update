@@ -36,6 +36,7 @@ class BaseEfTask(BaseTask):
         self._logged_in = False  # 记录是否已登录游戏
         self.box = ScreenPosition(self)  # 屏幕位置辅助对象，提供top/bottom/left/right等边界
         self.key_config = self.get_global_config('Game Hotkey Config')  # 获取全局热键配置
+        self.once_sleep_time = self.get_global_config('Ensure Main Once Action Sleep').get("SingleActionWithDelay", 1.5)  # 获取全局配置的单次动作睡眠时间
         self.key_manager = KeyConfigManager(self.key_config)  # 初始化热键管理器
         self._detector = None
         self._detector_loading = False
@@ -825,13 +826,13 @@ class BaseEfTask(BaseTask):
         if self.wait_login():
             return True
         if result := self.ocr(match=re.compile("结束拜访"), box=self.box.bottom_right):
-            self.click(result, after_sleep=1.5)
+            self.click(result, after_sleep=self.once_sleep_time)
             return False
         if result := self.ocr(match=[re.compile("确认"), re.compile("确定")], box=self.box.bottom_right):
-            self.click(result, after_sleep=1.5)
+            self.click(result, after_sleep=self.once_sleep_time)
             return False
         if esc:
-            self.back(after_sleep=1.5)
+            self.back(after_sleep=self.once_sleep_time)
             return False
         return False
 

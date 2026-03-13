@@ -1,4 +1,4 @@
-#
+# 配置项：主界面单次动作后延迟
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
@@ -8,6 +8,9 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+msgid "Ensure Main Once Action Sleep"
+msgstr "主界面单次动作后延迟"
 
 msgid "valley4"
 msgstr "四号谷地"
@@ -644,3 +647,398 @@ msgstr "蓝图键"
 
 msgid "Product Icon Toggle Key"
 msgstr "产物图标切换键"
+
+msgid "73100"
+msgstr ""
+
+msgid "79800"
+msgstr ""
+
+msgid "BitBlt_RenderFull"
+msgstr ""
+
+msgid "D96钢"
+msgstr ""
+
+msgid "F10"
+msgstr ""
+
+msgid "F11"
+msgstr ""
+
+msgid "F12"
+msgstr ""
+
+msgid "F9"
+msgstr ""
+
+msgid "SingleActionWithDelay"
+msgstr ""
+
+msgid "Test"
+msgstr ""
+
+msgid "WGC"
+msgstr ""
+
+msgid "三位一体"
+msgstr ""
+
+msgid "三相纳米片"
+msgstr ""
+
+msgid "上锁毕业基质"
+msgstr ""
+
+msgid "买信用商店"
+msgstr ""
+
+msgid "买卖货"
+msgstr ""
+
+msgid "仅接取"
+msgstr ""
+
+msgid "仅武陵7.98w/7.31w送货,教程视频 BV1LLc7zFEF9"
+msgstr ""
+
+msgid "仅送货"
+msgstr ""
+
+msgid "从这个仓库拿货"
+msgstr ""
+
+msgid "优先送礼对象"
+msgstr ""
+
+msgid "余烬"
+msgstr ""
+
+msgid "佩丽卡"
+msgstr ""
+
+msgid "供能高地"
+msgstr ""
+
+msgid "保存目录"
+msgstr ""
+
+msgid "倒货的轮次"
+msgstr ""
+
+msgid "别礼"
+msgstr ""
+
+msgid "刷体力"
+msgstr ""
+
+msgid "刷体力任务"
+msgstr ""
+
+msgid ""
+"前置是选择测试对象部分选择\"无\"\n"
+"仅接取7.31w武陵委托，不送货"
+msgstr ""
+
+msgid ""
+"前置是选择测试对象部分选择\"无\"\n"
+"接取武陵委托后启动自动识别送货"
+msgstr ""
+
+msgid "发货仓库"
+msgstr ""
+
+msgid "后台结束战斗通知"
+msgstr ""
+
+msgid "启动技能点数"
+msgstr ""
+
+msgid ""
+"启用后在对齐滑索时会自动滚动放大视角\n"
+"可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n"
+"建议启用此项时不要使用非白发或有白帽角色"
+msgstr ""
+
+msgid "命中毕业词条后自动点击右侧小锁上锁"
+msgstr ""
+
+msgid "四号谷地"
+msgstr ""
+
+msgid "四号谷地买入价"
+msgstr ""
+
+msgid "四号谷地卖出价"
+msgstr ""
+
+msgid "在好友交流助力时，优先尝试仅收取培育室的助力,但每次至少助力一次舱室"
+msgstr ""
+
+msgid "埃特拉"
+msgstr ""
+
+msgid "大潘"
+msgstr ""
+
+msgid "安塔尔"
+msgstr ""
+
+msgid "完整循环测试"
+msgstr ""
+
+msgid "定时截图"
+msgstr ""
+
+msgid "尝试仅收培育室"
+msgstr ""
+
+msgid "常沄"
+msgstr ""
+
+msgid "干员经验"
+msgstr ""
+
+msgid "干员进阶"
+msgstr ""
+
+msgid "平A点击间隔(秒), 越小越快, 建议 0.08~0.15"
+msgstr ""
+
+msgid "平A间隔"
+msgstr ""
+
+msgid "弧光"
+msgstr ""
+
+msgid "当技能点达到该数值时，开始执行技能序列, 1-3"
+msgstr ""
+
+msgid "彦宁"
+msgstr ""
+
+msgid "快子遴捡晶格"
+msgstr ""
+
+msgid "战斗中周期触发锁敌+向前闪避的最小间隔(秒，最少6秒)"
+msgstr ""
+
+msgid "截图保存路径（相对于项目根目录）"
+msgstr ""
+
+msgid "技能提升"
+msgstr ""
+
+msgid "技能释放"
+msgstr ""
+
+msgid "据点兑换"
+msgstr ""
+
+msgid "接取武陵券"
+msgstr ""
+
+msgid "接取武陵券最低金额(万)"
+msgstr ""
+
+msgid "接取武陵券最高金额(万)"
+msgstr ""
+
+msgid "接取谷地券"
+msgstr ""
+
+msgid "接取谷地券最低金额(万)"
+msgstr ""
+
+msgid "接取谷地券最高金额(万)"
+msgstr ""
+
+msgid "收信用"
+msgstr ""
+
+msgid "收货仓库"
+msgstr ""
+
+msgid "收集线索"
+msgstr ""
+
+msgid "教程"
+msgstr ""
+
+msgid "无"
+msgstr ""
+
+msgid "无数字操作间隔"
+msgstr ""
+
+msgid "日常奖励"
+msgstr ""
+
+msgid "是否启用滚动放大视角"
+msgstr ""
+
+msgid "昼雪"
+msgstr ""
+
+msgid "枢纽区"
+msgstr ""
+
+msgid "武器经验"
+msgstr ""
+
+msgid "武器进阶"
+msgstr ""
+
+msgid "武陵"
+msgstr ""
+
+msgid "武陵买入价"
+msgstr ""
+
+msgid "武陵卖出价"
+msgstr ""
+
+msgid "武陵城"
+msgstr ""
+
+msgid "每次截图的间隔时间（秒），最小 1 秒"
+msgstr ""
+
+msgid "每隔指定秒数截图保存，用于数据采集 / YOLO 样本收集"
+msgstr ""
+
+msgid "洁尔佩塔"
+msgstr ""
+
+msgid "源石研究园"
+msgstr ""
+
+msgid "源矿"
+msgstr ""
+
+msgid "满技能时, 开始释放技能, 如123, 建议只放3个技能"
+msgstr ""
+
+msgid "物品"
+msgstr ""
+
+msgid "狼卫"
+msgstr ""
+
+msgid "白垩界卫"
+msgstr ""
+
+msgid "目标券数"
+msgstr ""
+
+msgid "矿脉源区"
+msgstr ""
+
+msgid "秋栗"
+msgstr ""
+
+msgid "罗丹"
+msgstr ""
+
+msgid "艾尔黛拉"
+msgstr ""
+
+msgid "艾维文娜"
+msgstr ""
+
+msgid "莱万汀"
+msgstr ""
+
+msgid "萤石"
+msgstr ""
+
+msgid "蓝铁矿"
+msgstr ""
+
+msgid "象限拟合液"
+msgstr ""
+
+msgid "资源"
+msgstr ""
+
+msgid "赛希"
+msgstr ""
+
+msgid "超距辉映管"
+msgstr ""
+
+msgid "转交委托奖励领取"
+msgstr ""
+
+msgid "转交运送委托"
+msgstr ""
+
+msgid "转移轮次"
+msgstr ""
+
+msgid "转运到这个仓库"
+msgstr ""
+
+msgid "进入战斗后的初始等待时间"
+msgstr ""
+
+msgid "送礼"
+msgstr ""
+
+msgid "送礼任务最多尝试次数"
+msgstr ""
+
+msgid "选择测试对象"
+msgstr ""
+
+msgid "选择要转移的物品"
+msgstr ""
+
+msgid "通向送货点"
+msgstr ""
+
+msgid "造装备"
+msgstr ""
+
+msgid "重复测试的次数"
+msgstr ""
+
+msgid "钱币收集"
+msgstr ""
+
+msgid "间隔秒数"
+msgstr ""
+
+msgid "阿列什"
+msgstr ""
+
+msgid "陈千语"
+msgstr ""
+
+msgid "非毕业基质会尝试取消上锁（已上锁的会解锁）"
+msgstr ""
+
+msgid "非毕业基质取消上锁"
+msgstr ""
+
+msgid "非毕业基质弃置"
+msgstr ""
+
+msgid "骏卫"
+msgstr ""
+
+msgid "高容谷地电池"
+msgstr ""
+
+msgid "黎风"
+msgstr ""
+
+msgid ""
+"默认是无，表示正常执行相关任务\n"
+"也可以选择特定的滑索分叉序列来测试滑索功能\n"
+"选择完整循环测试则会依次测试每个送货目标的完整流程\n"
+"(需要锁定次要任务在送货任务上或附近)"
+msgstr ""
+
+msgid "齐纶"
+msgstr ""
