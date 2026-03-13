@@ -492,7 +492,7 @@ class DailyLiaisonMixin(BattleMixin):
         return True
 
     def detect_ticket_number(self):
-        result = self.wait_ocr(match=re.compile(r'^\d{1,3}/\d{1,3}$'),
+        result = self.wait_ocr(match=re.compile(r'^\d{1,4}/\d{1,3}$'),
                                box=self.box_of_screen(1400 / 1920, 0, 1, 70 / 1080), log=True)
         if result:
             ticket = int(result[0].name.split("/")[0])

@@ -6,6 +6,7 @@ from src.data.FeatureList import FeatureList as fL
 class DailyShopMixin(BaseEfTask):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
+        self.refresh_count=0
         self.refresh_cost_list = [80, 120, 160, 200]
         self.credit_good_search_box = None
 
@@ -14,9 +15,9 @@ class DailyShopMixin(BaseEfTask):
             return False,sum_credit
         cost=self.refresh_cost_list[self.refresh_count]
         if sum_credit-cost>200:
-            if not self.wait_click_ocr(match=re.compile("刷新"), time_out=5,box=self.box.bottom_right,after_sleep=2):
+            if not self.wait_click_ocr(match=re.compile("立即刷新"), time_out=5,box=self.box.bottom_right,after_sleep=2):
                 return False,sum_credit
-            if not self.wait_click_ocr(match=re.compile("确认"), time_out=5,box=self.box.center,after_sleep=2):
+            if not self.wait_click_ocr(match=re.compile("确认"), time_out=5,box=self.box.bottom_right,after_sleep=2):
                 return False,sum_credit
             sum_credit -= cost
             self.refresh_count += 1
@@ -54,7 +55,7 @@ class DailyShopMixin(BaseEfTask):
             if not self.wait_click_ocr(match=re.compile("确认"),after_sleep=2,time_out=4,box=self.box.bottom_right):
                 self.back_shop()
                 return False,sum_credit,False
-            self.wait_pop_up()
+            self.wait_pop_up(after_sleep=2)
             sum_credit -= cost
         if sum_credit<=300:
             return True,sum_credit,True
@@ -89,7 +90,7 @@ class DailyShopMixin(BaseEfTask):
             if not self.wait_click_ocr(match=re.compile("确认"), after_sleep=2, time_out=4, box=self.box.bottom_right):
                 self.back_shop()
                 return False
-            self.wait_pop_up()
+            self.wait_pop_up(after_sleep=2)
             sum_credit -= cost
             if sum_credit <= 300:
                 return True
