@@ -49,6 +49,7 @@ class FeatureList(str, Enum):
     fluorite_contact = 'fluorite_contact'
     friend_chat_icon = 'friend_chat_icon'
     gather_icon_out_map = 'gather_icon_out_map'
+    gather_icon_out_map2 = 'gather_icon_out_map2'
     gathering_materials_icon = 'gathering_materials_icon'
     gilberta_contact = 'gilberta_contact'
     high_capacity_valley_battery = 'high_capacity_valley_battery'

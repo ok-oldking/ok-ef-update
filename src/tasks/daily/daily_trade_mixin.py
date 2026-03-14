@@ -194,7 +194,7 @@ class DailyTradeMixin(NavigationMixin):
         result = self.navigate_until_target(
             target_ocr_pattern=re.compile("物资调度终端"),
             nav_feature_name=fL.market_dispatch_terminal_out,
-            timeout=200,
+            time_out=200,
         )
 
         if result:

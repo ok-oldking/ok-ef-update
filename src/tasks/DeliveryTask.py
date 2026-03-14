@@ -2,10 +2,13 @@ import re
 import time
 from dataclasses import dataclass
 from typing import List, Tuple
+
 from ok import Box
+
 from src.data.FeatureList import FeatureList as fL
 from src.tasks.BaseEfTask import BaseEfTask
 from src.tasks.mixin.map_mixin import MapMixin
+from src.tasks.mixin.navigation_mixin import NavigationMixin
 from src.tasks.mixin.zip_line_mixin import ZipLineMixin
 
 secondary_objective_direction_dot = [fL.secondary_objective_direction_dot, fL.secondary_objective_direction_dot_light,
@@ -24,7 +27,7 @@ class DeliveryRow:
     box: Tuple[float, float, float, float]  # (x1, y1, x2, y2)
 
 
-class DeliveryTask(ZipLineMixin, MapMixin):
+class DeliveryTask(ZipLineMixin, MapMixin, NavigationMixin, BaseEfTask):
     """运输委托自动化任务类 - 处理游戏中的送货操作"""
 
     # 配置键名常量
@@ -417,7 +420,7 @@ class DeliveryTask(ZipLineMixin, MapMixin):
             if only_zip_line:
                 return True
             if self.wait_ocr(match="登上滑索架", box=self.box.bottom_right, time_out=2, log=True):
-                self.send_key("v", after_sleep=1)
+                self.press_key("v", after_sleep=1)
                 self.press_key('f', after_sleep=2)
                 self.align_ocr_or_find_target_to_center(
                     ocr_match_or_feature_name_list=secondary_objective_direction_dot,
@@ -471,7 +474,7 @@ class DeliveryTask(ZipLineMixin, MapMixin):
             self.click(key="right", after_sleep=2)
         for i in range(40):
             self.sleep(2)
-            self.send_key("v", after_sleep=1)
+            self.press_key("v", after_sleep=1)
             self.align_ocr_or_find_target_to_center(
                 ocr_match_or_feature_name_list=secondary_objective_direction_dot,
                 threshold=0.8,

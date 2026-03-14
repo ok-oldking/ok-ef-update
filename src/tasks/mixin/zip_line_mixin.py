@@ -1,15 +1,15 @@
 import re
 import time
 
-from src.tasks.BaseEfTask import BaseEfTask
 from src.image.hsv_config import HSVRange as hR
+from src.tasks.mixin.navigation_mixin import NavigationMixin
 
 on_zip_line_tip = ["向目标移动", "离开滑索架"]
 on_zip_line_stop = [re.compile(i) for i in on_zip_line_tip]
 continue_next = re.compile("下一连接点")
 
 
-class ZipLineMixin(BaseEfTask):
+class ZipLineMixin(NavigationMixin):
     def on_zip_line_start(self, delivery_to, need_scroll=None):
         """进入滑索后，根据配置对齐并滑行至送货点
 

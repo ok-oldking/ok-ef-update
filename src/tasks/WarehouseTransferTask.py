@@ -144,7 +144,7 @@ class WarehouseTransferTask(BaseEfTask):
         if not item_key:
             raise RuntimeError("未选择物品")
         max_times = int(self.config.get("转移轮次", 10))
-        self.send_key("b", after_sleep=1)
+        self.press_key("b", after_sleep=1)
         search_box = self.box_of_screen(0.12, 0.30, 0.55, 0.68)
         while True:
             current = self._detect_current_location()
