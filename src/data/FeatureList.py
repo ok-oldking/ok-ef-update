@@ -100,6 +100,7 @@ class FeatureList(str, Enum):
     snowshine_contact = 'snowshine_contact'
     source_ore = 'source_ore'
     switch_q = 'switch_q'
+    tangtang_contact = 'tangtang_contact'
     ticket_valley = 'ticket_valley'
     ticket_wuling = 'ticket_wuling'
     top_left_tab = 'top_left_tab'
@@ -125,3 +126,4 @@ class FeatureList(str, Enum):
     wuling_7_98w_dark_2k = 'wuling_7_98w_dark_2k'
     wuling_7_98w_dark_4k = 'wuling_7_98w_dark_4k'
     xaihi_contact = 'xaihi_contact'
+    yvonne_contact = 'yvonne_contact'
