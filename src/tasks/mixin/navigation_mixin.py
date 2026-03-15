@@ -333,7 +333,7 @@ class NavigationMixin(BaseEfTask):
                 # cy = int(self.height * 0.5)
                 for _ in range(6):
                     # self.scroll(cx, cy, 8)
-                    self.scroll(0.5, 0.5, 80)
+                    self.scroll_relative(0.5, 0.5, 80)
                     self.sleep(1)
         if raise_if_fail:
             raise Exception("对中失败")
