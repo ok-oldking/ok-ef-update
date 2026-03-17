@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS
 
-version = "v0.1.45"
+version = "v0.1.46"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -118,8 +118,9 @@ config = {
         ["src.tasks.DeliveryTask", "DeliveryTask"],
         ["src.tasks.EssenceScanTask", "EssenceScanTask"],
         ["src.tasks.BattleTask", "BattleTask"],
-        ["src.tasks.Test", "Test"],
         ["src.tasks.PeriodicScreenshotTask", "PeriodicScreenshotTask"],
+        ["src.tasks.TestStartGame", "TestStartGame"],
+        ["src.tasks.Test", "Test"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
     ],
     "trigger_tasks": [  # 不断执行的触发式任务
