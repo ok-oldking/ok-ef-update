@@ -1,3 +1,4 @@
+import datetime
 from qfluentwidgets import FluentIcon
 
 from src.data.world_map import areas_list, stages_list, stages_dict
@@ -12,56 +13,23 @@ from ok import TaskDisabledException
 
 
 class DailyTask(
-    DailyLiaisonMixin,
-    DailyTradeMixin,
-    DailyRoutineMixin,
-    DailyShopMixin,
-    DailyBattleMixin
+    DailyBattleMixin,   # 刷体力
+    DailyTradeMixin,    # 买卖货
+    DailyShopMixin,     # 买信用商店
+    DailyRoutineMixin,  # 其它
+    DailyLiaisonMixin,  # 送礼
 ):
     """日常任务聚合执行器。"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.name = "日常任务"
-        self.description = "一键收菜\n反复按esc请前往设置调整主界面单次动作后延迟，建议1.5秒以上"
+        self.description = "子任务开关用⭐标出，自上而下顺序执行，最后执行『日常奖励』。\n如果出现反复按ESC的情形，请调高『设置/主界面单次动作后延迟』（建议1.5以上）。"
         self.icon = FluentIcon.SYNC
         self.support_schedule_task = True
-        buy_sell = dict()
-        for area in areas_list:
-            buy_sell[f"{area}买入价"] = 900
-            buy_sell[f"{area}卖出价"] = 4500
-            buy_sell[area] = True
         self.stages_list = stages_list
-        self.default_config.update(buy_sell)
-        # self.default_config.update({"优先送礼对象": list(self.can_contact_dict.keys())[0]})
-
-        self.default_config.update(
-            {
-                # "送礼任务最多尝试次数": 2,
-                # "送礼": True,
-                # "据点兑换": True,
-                "转交运送委托": True,
-                "转交委托奖励领取": True,
-                "造装备": True,
-                "收信用": True,
-                "尝试仅收培育室": False,
-                "收集线索": True,
-                "制造舱": True,
-                "买信用商店": False,
-                "信用商店保留信用": 300,
-                "买卖货": True,
-                "刷体力": True,
-                "日常奖励": True,
-                "发生异常时终止游戏": False
-            }
-        )
-        self.config_type["体力本"] = {"type": "drop_down", "options": self.stages_list}
-        # self.config_type["优先送礼对象"] = {"type": "drop_down", "options": list(self.can_contact_dict.keys())}
-        self.config_description.update({"尝试仅收培育室": '前置是启用收信用'})
+        self.default_config.update({"发生异常时终止游戏": False})
         self.add_exit_after_config()
-        self.config_description.update({
-            "尝试仅收培育室": "在好友交流助力时，优先尝试仅收取培育室的助力,但每次至少助力一次舱室",
-        })
         if self.debug:
             self.default_config.update({"重复测试的次数": 1})
 
@@ -78,18 +46,19 @@ class DailyTask(
             else:
                 self.ensure_main()
             tasks = [  # 确保在主界面
-                ("送礼", self.execute_gift_task),
-                ("据点兑换", self.exchange_outpost_goods),
-                ("转交运送委托", self.delivery_send_others),
-                ("转交委托奖励领取", self.claim_delivery_rewards),
-                ("造装备", self.make_weapon),
-                ("收信用", self.collect_credit),
-                ("收集线索", self.collect_clue),
-                ("制造舱", self.up_make_room_num),
-                ("买信用商店", self.credit_shop),
-                ("买卖货", self.buy_sell),
-                ("刷体力", self.battle),
-                ("日常奖励", self.claim_daily_rewards),
+                ("⭐送礼", self.execute_gift_task),
+                ("⭐据点兑换", self.exchange_outpost_goods),
+                ("⭐转交运送委托", self.delivery_send_others),
+                ("⭐转交委托奖励领取", self.claim_delivery_rewards),
+                ("⭐造装备", self.make_weapon),
+                ("⭐收信用", self.collect_credit),
+                ("⭐收集线索", self.collect_clue),
+                ("⭐制造舱", self.up_make_room_num),
+                ("⭐买信用商店", self.credit_shop),
+                ("⭐买卖货", self.buy_sell),
+                ("⭐刷体力", self.battle),
+                ("⭐周常奖励", self.claim_weekly_rewards),
+                ("⭐日常奖励", self.claim_daily_rewards),
             ]
             all_fail_tasks = []
             if self.debug:
@@ -98,6 +67,7 @@ class DailyTask(
                     failed_tasks = []
                     for key, func in tasks:
                         if not self.execute_task(key, func):
+                            self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyTask_FailTask_{key}')
                             failed_tasks.append(key)
                     if failed_tasks:
                         all_fail_tasks.append((repeat_idx + 1, failed_tasks))
@@ -118,6 +88,7 @@ class DailyTask(
                 else:
                     self.log_info("日常完成!", notify=True)
         except Exception as e:
+            self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyTask_Exception')
             # 除 TaskDisabledException 外的异常才杀死进程
             if not isinstance(e, TaskDisabledException):
                 if self.config.get("发生异常时终止游戏", False):
