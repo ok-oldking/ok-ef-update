@@ -2,13 +2,11 @@ import datetime
 from qfluentwidgets import FluentIcon
 
 from src.data.world_map import areas_list, stages_list, stages_dict
-from src.tasks.BaseEfTask import BaseEfTask
 from src.tasks.daily.daily_battle_mixin import DailyBattleMixin
 from src.tasks.daily.daily_liaison_mixin import DailyLiaisonMixin
 from src.tasks.daily.daily_routine_mixin import DailyRoutineMixin
 from src.tasks.daily.daily_shop_mixin import DailyShopMixin
 from src.tasks.daily.daily_trade_mixin import DailyTradeMixin
-from src.tasks.mixin.common import Common
 from ok import TaskDisabledException
 
 
@@ -47,6 +45,7 @@ class DailyTask(
                 self.ensure_main()
             tasks = [  # 确保在主界面
                 ("⭐送礼", self.execute_gift_task),
+                ("⭐收邮件", self.claim_mail),
                 ("⭐据点兑换", self.exchange_outpost_goods),
                 ("⭐转交运送委托", self.delivery_send_others),
                 ("⭐转交委托奖励领取", self.claim_delivery_rewards),

@@ -5,14 +5,16 @@ from src.data.world_map import areas_list, outpost_dict, goods_dict
 from src.data.world_map_utils import get_area_by_outpost_name, get_goods_by_outpost_name
 from src.image.hsv_config import HSVRange as hR
 from src.tasks.mixin.liaison_mixin import LiaisonMixin
+from src.tasks.mixin.common import Common
 from src.data.FeatureList import FeatureList as fL
 from src.data.characters_utils import get_contact_list_with_feature_list
 
 
-class DailyRoutineMixin(LiaisonMixin):
+class DailyRoutineMixin(LiaisonMixin, Common):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.default_config.update({
+            "⭐收邮件": True,
             "⭐据点兑换": True,
             "交易货品优先序列": "",
             "⭐转交运送委托": True,
@@ -26,6 +28,7 @@ class DailyRoutineMixin(LiaisonMixin):
             "⭐日常奖励": True,
         })
         self.config_description.update({
+            "⭐收邮件": "是否前往「邮箱」领取邮件。",
             "⭐据点兑换": "是否在「地区建设/据点管理」中通过交易获得调度券。",
             "交易货品优先序列": "默认留空，交易货品顺序随机。更多用法参见 ./docs/日常任务.md > 优先货品交易序列 。",
             "⭐转交运送委托": "是否在「地区建设/仓储结点」中转交全部运送委托。",
@@ -38,7 +41,7 @@ class DailyRoutineMixin(LiaisonMixin):
             "⭐周常奖励": "是否领取「活动中心/每周事物」中的奖励。",
             "⭐日常奖励": "是否领取「行动手册/日常」和「通行证」中的奖励。",
         })
-       
+
     def wait_friend_list(self, end_icon_name="friend_chat_icon"):
         start_time = time.time()
         while True:
@@ -166,6 +169,20 @@ class DailyRoutineMixin(LiaisonMixin):
                 self.back(after_sleep=2)
             is_first_time = False
             count += 1
+
+    def claim_mail(self):
+        self.info_set("current_task", "claim_delivery_rewards")
+        self.log_info("开始收邮件")
+
+        self.send_key("k", after_sleep=2)
+        self.wait_click_ocr(
+            x=0, y=0.88,
+            to_x=0.25, to_y=0.95,
+            match=re.compile("收取"),  # 全部收取
+            time_out=5,
+            after_sleep=2,
+        )
+        return True
 
     def claim_delivery_rewards(self):
         self.info_set("current_task", "claim_delivery_rewards")
@@ -432,17 +449,9 @@ class DailyRoutineMixin(LiaisonMixin):
                 self.log_info(f"{outpost_name} 据点当前券数量不足 (<1000)，停止兑换")
                 break
 
-            plus_button = self.find_one(
-                feature_name="plus_button",
-                box=self.box.bottom_right,
-                threshold=0.8,
-            )
-
-            if not plus_button:
-                continue
-
-            self.log_info("找到加号按钮，执行点击")
-            self.click(plus_button, down_time=12, after_sleep=0)
+            if not self.plus_max():
+                self.log_info("未找到 '确认' 按钮，跳过本次活动")
+                break
 
             self.wait_click_ocr(
                 match="交易",
@@ -646,7 +655,7 @@ class DailyRoutineMixin(LiaisonMixin):
                 after_sleep=2,
             )
 
-         # 通行证奖励
+        # 通行证奖励
         self.wait_click_ocr(
             match=re.compile("领取"),  # 一键领取
             box=self.box.bottom,
