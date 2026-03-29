@@ -409,6 +409,36 @@ class BaseEfTask(BaseTask):
             last_frame = current_frame
             self.sleep(refresh_interval)
 
+    def enter_home_room_list(self, timeout=6):
+        """
+        进入基地房间列表页面（i 面板）
+
+        Returns:
+            bool: 是否成功进入
+        """
+
+        self.log_info("进入基地房间列表页面")
+
+        # 1️⃣ 回到基地
+        self.transfer_to_home_point(should_check_out_boat=True)
+
+        # 2️⃣ 打开 i 面板
+        self.press_key("i")
+
+        exchange_help_box = self.box_of_screen(0.1, 561 / 861, 0.9, 0.9)
+
+        # 3️⃣ 判定是否进入成功（识别房间关键词）
+        room_keywords = [re.compile("会客室"), re.compile("制造")]
+
+        results = self.wait_ocr(match=room_keywords, time_out=timeout, box=exchange_help_box)
+
+        if results:
+            self.log_info(f"已进入房间列表: {[r.name for r in results]}")
+            return True
+
+        self.log_info("未识别到房间列表")
+        return False
+
     def to_model_area(self, area, model):
         """导航到指定区域的特定模块
         
@@ -421,19 +451,17 @@ class BaseEfTask(BaseTask):
 
         for _ in range(3):
             self.press_key("y")
-            # 检测左上角是否有“建设”
             check = self.wait_ocr(match=re.compile("建设"), box=self.box.top_left, time_out=5)
-
             if check:
-                # 界面已经在，只是没识别到区域
                 success = True
+            else:
+                self.log_info("未识别到区域且未检测到建设，重新尝试打开界面")
+                continue
             result = self.wait_ocr(match=[re.compile(area) for area in areas_list], box=self.box.left, time_out=1)
-
             if result:
                 success = True
                 break
             else:
-                # 没有建设，说明界面没打开，继续下一轮重新按 y
                 self.log_info("未识别到区域且未检测到建设，重新尝试打开界面")
 
         if not success:
@@ -467,7 +495,7 @@ class BaseEfTask(BaseTask):
         )
         if box:
             self.click(box[0], move_back=True)
-            self.wait_ocr(match=re.compile(f"{model[:2]}"), box=self.box.right)
+            self.wait_ocr(match=re.compile(f"{model[:2]}"), box=self.box.top_left)
             self.sleep(0.5)
             return True
         else:
@@ -652,13 +680,14 @@ class BaseEfTask(BaseTask):
 
     def ensure_map(self, addtional_match=None, time_out=30):
         """确保进入地图界面，超时30秒"""
-        satet_time = time.time()
+        self.ensure_main()
+        start_time = time.time()
         if addtional_match:
             match = [re.compile("事务")]+addtional_match if isinstance(addtional_match, list) else [re.compile("事务"), re.compile(addtional_match)]
         else:
             match = [re.compile("事务")]
         while not self.wait_ocr(match=match, time_out=2, box=self.box.top_left):
-            if time.time() - satet_time > time_out:
+            if time.time() - start_time > time_out:
                 raise Exception("进入地图失败")
             self.press_key("m")
 
