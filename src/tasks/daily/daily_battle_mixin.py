@@ -52,10 +52,10 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
     def battle(self):
         stage_name = self.config.get("体力本")
         category_name = get_stage_category(stage_name)
+        self.ensure_main()
+        self.press_key("f8")
+        self.wait_click_ocr(match=re.compile("索引"), time_out=7, after_sleep=2, box=self.box.top, log=True)
         if self.config.get("消耗限时体力药", False):
-            self.ensure_main()
-            self.press_key('f8')
-            self.wait_click_ocr(match=re.compile("索引"), time_out=7, after_sleep=2, box=self.box.top, log=True)
             self.click(3530/3840, 80/2160, after_sleep=2)  # 右上角加号
             box_list = self.ocr(x=0.28, y=0.45, to_x=0.88, to_y=0.66, match=re.compile(r"(\d+)天"))
             if len(box_list) <= 0:
@@ -78,8 +78,8 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                     else:
                         self.log_error(f"已使用 {consume} 个 应急理智加强剂")
                         self.wait_pop_up()
-        if not self.safe_back(re.compile("干员"), box=self.box.top_left, time_out=10, ocr_time_out=2):
-            return False
+            if not self.safe_back(re.compile("干员"), box=self.box.top_left, time_out=10, ocr_time_out=2):
+                return False
         left_ticket = self.detect_ticket_number()
         self.log_info(f"当前体力: {left_ticket}")
         if left_ticket < stages_cost[category_name]:
@@ -317,7 +317,6 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         if not self.wait_click_ocr(match=re.compile("领取"), box=self.box.bottom_right, time_out=2, log=True):
             self.log_info("领取失败")
             return 0
-        self.wait_pop_up(after_sleep=2)
         # 预测下一轮是否还能继续
         next_sum = sum_ticket_number - need_ticket_number
         self.log_info("预测下一轮消耗理智: {}, 预测下一轮剩余理智: {}".format(need_ticket_number, next_sum))
