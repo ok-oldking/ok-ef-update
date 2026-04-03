@@ -24,11 +24,11 @@ class DailyShopMixin(Common):
             return False, sum_credit
         cost = self.refresh_cost_list[self.refresh_count]
         if sum_credit - cost > 210:
-            if not self.wait_click_ocr(match=re.compile("立即刷新"), time_out=5, box=self.box.bottom_right):
+            if not self.wait_click_ocr(match=re.compile("刷新"), time_out=5, box=self.box_of_screen(2/3, 0.5, 1, 1)):
                 return False, sum_credit
             if not self.wait_click_ocr(match=re.compile("确认"), time_out=5, box=self.box.bottom_right):
-                self.wait_ui_stable(refresh_interval=0.5)
                 return False, sum_credit
+            self.wait_ui_stable(refresh_interval=0.5)
             sum_credit -= cost
             self.refresh_count += 1
             self.wait_ui_stable(refresh_interval=1)
