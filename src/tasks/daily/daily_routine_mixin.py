@@ -144,7 +144,8 @@ class DailyRoutineMixin(LiaisonMixin, Common):
             if left_help_time > 0:
                 actions.append("助力")
             self.log_info(f"已进入好友帝江号，准备进行{''.join(actions)}操作")
-            self.press_key("y", after_sleep=2)
+            self.press_key("y")
+            self.wait_ui_stable(refresh_interval=1)
             if left_exchange_time > 0:
                 if not self.wait_click_ocr(match=re.compile("情报交流"), box=exchange_help_box, time_out=5):
                     left_exchange_time = 0
@@ -407,14 +408,26 @@ class DailyRoutineMixin(LiaisonMixin, Common):
                 self.log_info(f"{outpost_name} 没有可兑换的货物")
                 break
 
-            if len(priority_list) > 0:
-                for p in reversed(priority_list):
-                    pm = re.compile(p)
-                    goods_name = list(map(lambda g: g.name, goods))
-                    for g in goods_name:
-                        if pm.search(g):
-                            goods.insert(0, goods.pop(goods_name.index(g)))
-                            break
+            if priority_list:
+                patterns = [re.compile(p) for p in priority_list]
+
+                matched = set()
+                result = []
+
+                for pm in patterns:
+                    # 找出当前规则匹配的所有 goods
+                    group = [g for g in goods if g not in matched and pm.search(g.name)]
+
+                    # 👉 按 name 长度降序
+                    group.sort(key=lambda g: len(g.name), reverse=True)
+
+                    result.extend(group)
+                    matched.update(group)
+
+                # 剩下没匹配的放后面（保持原顺序）
+                result.extend([g for g in goods if g not in matched])
+
+                goods[:] = result
 
             exchange_good = None
             for good in goods:
