@@ -408,26 +408,13 @@ class DailyRoutineMixin(LiaisonMixin, Common):
                 self.log_info(f"{outpost_name} 没有可兑换的货物")
                 break
 
-            if priority_list:
-                patterns = [re.compile(p) for p in priority_list]
+            def priority_score(name):
+                for i, p in enumerate(priority_list):
+                    if re.search(p, name):
+                        return i
+                return len(priority_list)
 
-                matched = set()
-                result = []
-
-                for pm in patterns:
-                    # 找出当前规则匹配的所有 goods
-                    group = [g for g in goods if g not in matched and pm.search(g.name)]
-
-                    # 👉 按 name 长度降序
-                    group.sort(key=lambda g: len(g.name), reverse=True)
-
-                    result.extend(group)
-                    matched.update(group)
-
-                # 剩下没匹配的放后面（保持原顺序）
-                result.extend([g for g in goods if g not in matched])
-
-                goods[:] = result
+            goods.sort(key=lambda g: (priority_score(g.name), -len(g.name)))
 
             exchange_good = None
             for good in goods:
