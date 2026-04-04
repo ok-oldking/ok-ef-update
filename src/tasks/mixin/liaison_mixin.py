@@ -426,41 +426,31 @@ class LiaisonMixin(NavigationMixin):
             bool: 是否成功完成
         """
         self.log_info("开始收取或赠送礼物")
-        start_time = time.time()
         collect_give_box = self.box_of_screen(1434 / 1920, 0.5, 1, 872 / 1080)
-        while True:
+        result = self._loop_wait_click_ocr(
+            match=[re.compile("收下"), re.compile("赠送")],
+            box=collect_give_box,
+            timeout=30,
+            log_msg="等待 收下/赠送 超时",
+        )
 
-            if time.time() - start_time > 30:
-                self.log_info("等待 收下/赠送 超时")
-                return False
+        if not result:
+            return False
 
-            self.click(0.5, 0.5, after_sleep=0.5)
-
-            result = self.wait_click_ocr(match=[re.compile("收下"), re.compile("赠送")], box=collect_give_box, time_out=1, after_sleep=0.5)
-
-            if result:
-                self.log_info(f"找到按钮: {result[0].name}")
-                break
+        self.log_info(f"找到按钮: {result[0].name}")
 
         if result and len(result) > 0 and "收下" in result[0].name:
             self.log_info("开始收下礼物")
             self.skip_dialog()
             self.press_key('f', after_sleep=0.5)
-            start_time = time.time()
+            result = self._loop_wait_click_ocr(
+                match=[re.compile("赠送")], box=collect_give_box, timeout=30, log_msg="等待 收下/赠送 超时"
+            )
 
-            while True:
+            if not result:
+                return False
 
-                if time.time() - start_time > 30:
-                    self.log_info("等待 收下/赠送 超时")
-                    return False
-
-                self.click(0.5, 0.5, after_sleep=0.5)
-
-                result = self.wait_click_ocr(match=[re.compile("赠送")], box=collect_give_box, time_out=2)
-
-                if result:
-                    self.log_info("收下完成，准备赠送礼物")
-                    break
+            self.log_info("收下完成，准备赠送礼物")
         self.wait_ocr(match=re.compile("默认"), box=self.box.bottom_left, time_out=5)
         self.click(144 / 1920, 855 / 1080)
         self.log_info("点击赠送礼物位置")
@@ -478,3 +468,19 @@ class LiaisonMixin(NavigationMixin):
             return True
         self.log_info("赠送礼物失败")
         return False
+
+    def _loop_wait_click_ocr(self, match, box, timeout, log_msg=None):
+        start_time = time.time()
+
+        while True:
+            if time.time() - start_time > timeout:
+                if log_msg:
+                    self.log_info(log_msg)
+                return None
+
+            self.click(0.5, 0.5, after_sleep=0.5)
+
+            result = self.wait_click_ocr(match=match, box=box, time_out=1, after_sleep=0.5)
+
+            if result:
+                return result
