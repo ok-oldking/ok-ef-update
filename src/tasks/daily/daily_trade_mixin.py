@@ -34,8 +34,14 @@ class DailyTradeMixin(NavigationMixin, Common):
             buy_sell_desc_dict[area] = f"是否启用「地区建设/{area}物资调度/弹性需求物资」交易。"
         self.default_config.update(buy_sell_dict)
         self.config_description.update({
-            "⭐买卖货": "是否在「弹性需求物资」与好友交易赚取调度券。自动选择利润最高的方案，然后用价格上下限判定是否交易。（除非可购买数量即将溢出，这种情况下必定交易。）",
-            "只买不卖": "启用后将只进行购买操作，不进行出售操作。",
+            "⭐买卖货": (
+                "是否在「弹性需求物资」与好友交易赚取调度券。\n"
+                "自动选择利润最高的方案，然后用价格上下限判定是否交易。\n"
+                "（除非可购买数量即将溢出，这种情况下必定交易。）"
+            ),
+            "只买不卖": (
+                "启用后将只进行购买操作，不进行出售操作。"
+            ),
             **buy_sell_desc_dict,
         })
 
