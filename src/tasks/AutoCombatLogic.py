@@ -54,6 +54,8 @@ class AutoCombatLogic:
                 time.sleep(wait_time)
 
         while True:
+            if task.use_link_skill():
+                continue
             if task._check_single_exit_condition():
                 if task.debug:
                     task.screenshot("out_of_combat")
@@ -67,7 +69,7 @@ class AutoCombatLogic:
                 continue
             task.approach_enemy()
             if not self.rotation_enabled or not self.rotation_active:
-                if task.use_link_skill() or task.use_ult():
+                if task.use_ult():
                     continue
 
                 skill_count = task.get_skill_bar_count()
@@ -85,7 +87,7 @@ class AutoCombatLogic:
                             if current_points >= 1 and time_since_last_skill >= 1.0:
                                 break
 
-                            if task.use_link_skill() or task.use_ult():
+                            if task.use_ult():
                                 continue
 
                             if current_points < 0 and (task.ocr_lv() or not task.in_team()):

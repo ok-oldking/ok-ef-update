@@ -16,6 +16,14 @@ class LoginMixin(BaseEfTask):
             username (str): 账号
             password (str): 密码
         """
+        self._logged_in = False
+        start_time = time.time()
+        while time.time() - start_time < 3:
+            result = self.wait_ocr(match=re.compile("ms"), time_out=1, box=self.box.bottom_left)
+            if result:
+                self._logged_in = True
+                break
+            self.sleep(1)
         if self._logged_in:
             self.ensure_main()
             self.back(after_sleep=2)
@@ -36,7 +44,7 @@ class LoginMixin(BaseEfTask):
             if result:
                 break
         if not result:
-            raise RuntimeError("未找到登出按钮")
+            raise RuntimeError("未找到登出按钮，可能没有先登录，请先登录任意账号")
         self.click(result[0], after_sleep=1)
         self.wait_click_ocr(match=re.compile("确认"), time_out=10, box=self.box.bottom_right, after_sleep=2)
         self._logged_in = False
@@ -82,6 +90,18 @@ class LoginMixin(BaseEfTask):
 
         self._type_text(password)
         pyautogui.press("enter")
+        if not self._confirm_logined():
+            raise RuntimeError("登录失败")
+    def _confirm_logined(self, time_out=30):
+        start_time = time.time()
+        while time.time() - start_time < time_out:
+            result = self.find_feature(feature_name=fL.logout)
+            if result:
+                self.log_info("登录成功")
+                return True
+            self.sleep(1)
+        self.log_error("登录确认超时，疑似登录失败")
+        return False
 
     def _type_text(self, text: str):
         """
