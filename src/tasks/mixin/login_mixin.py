@@ -5,6 +5,7 @@ from src.tasks.BaseEfTask import BaseEfTask
 from src.data.FeatureList import FeatureList as fL
 from src.interaction.Mouse import run_at_window_pos
 
+
 class LoginMixin(BaseEfTask):
 
     def login_flow(self, username: str, password: str):
@@ -19,7 +20,7 @@ class LoginMixin(BaseEfTask):
             self.ensure_main()
             self.back(after_sleep=2)
             for _ in range(5):
-                result=self.find_one(fL.main_out,vertical_variance=0.05,horizontal_variance=0.1,threshold=0.6)
+                result = self.find_one(fL.main_out, vertical_variance=0.05, horizontal_variance=0.1, threshold=0.6)
                 if result:
                     break
                 self.sleep(1)
@@ -38,7 +39,7 @@ class LoginMixin(BaseEfTask):
             raise RuntimeError("未找到登出按钮")
         self.click(result[0], after_sleep=1)
         self.wait_click_ocr(match=re.compile("确认"), time_out=10, box=self.box.bottom_right, after_sleep=2)
-        self._logged_in=False
+        self._logged_in = False
         start_time = time.time()
         while time.time() - start_time < 60:
             result = self.login_ocr(match=re.compile("密码"), box=self.box.bottom)
@@ -55,7 +56,8 @@ class LoginMixin(BaseEfTask):
             self.sleep(1)
         if not result:
             raise RuntimeError("未找到密码登录按钮")
-        run_at_window_pos(self.hwnd.hwnd,pyautogui.click,result[0].x+result[0].width//2,result[0].y+result[0].height//2)
+        run_at_window_pos(self.hwnd.hwnd, pyautogui.click, result[0].x + result[0].width // 2,
+                          result[0].y + result[0].height // 2)
         account = self.login_ocr(match=re.compile("账号"), box=self.box.center)
         if not account:
             raise RuntimeError("未找到账号输入框")
@@ -80,6 +82,7 @@ class LoginMixin(BaseEfTask):
 
         self._type_text(password)
         pyautogui.press("enter")
+
     def _type_text(self, text: str):
         """
         通用输入（支持中文）

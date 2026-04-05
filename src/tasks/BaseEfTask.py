@@ -8,10 +8,7 @@ from typing import List
 import cv2
 import imagehash
 import numpy as np
-import win32api
-import win32con
 import win32gui
-import win32process
 from PIL import Image
 from ok import BaseTask, Box
 from skimage.metrics import structural_similarity as ssim
@@ -27,6 +24,7 @@ from src.interaction.Key import move_keys
 from src.interaction.KeyConfig import KeyConfigManager
 from src.interaction.Mouse import active_and_send_mouse_delta, move_to_target_once, run_at_window_pos
 from src.interaction.ScreenPosition import ScreenPosition
+from src.tasks.mixin.process_manager import ProcessManager
 
 feature_values = [f.value for f in fL]
 
@@ -41,7 +39,7 @@ def back_window(prev):
             pass
 
 
-class BaseEfTask(BaseTask):
+class BaseEfTask(BaseTask, ProcessManager):
     """游戏自动化任务基类，提供通用的交互和识别功能"""
 
     def __init__(self, *args, **kwargs):
@@ -57,6 +55,30 @@ class BaseEfTask(BaseTask):
         self._detector_loading = False
         self._detector_loaded_event = threading.Event()
         self._start_detector_loading()
+
+    def find_danger(self):
+        danger_group_fixed = ["danger_" + str(i) for i in range(3, 6)]
+        for danger in danger_group_fixed:
+            result = self.find_one(danger, threshold=0.8, vertical_variance=0.01, horizontal_variance=0.01)
+            if result:
+                return True
+        danger_group = ["danger_" + str(i) for i in range(1, 3)]
+        danger_group_box = self.box_of_screen(640 / 1920, 480 / 1080, 1300 / 1920, 600 / 1080)
+        for danger in danger_group:
+            result = self.find_one(danger, threshold=0.8, box=danger_group_box, vertical_variance=0.01,
+                                   horizontal_variance=0.01)
+            if result:
+                return True
+        return False
+
+    def click(self, x=-1, y=-1, move_back=False, name=None, interval=-1, move=True, down_time=0.01, after_sleep=0,
+              key='left'):
+        self.sleep(0.1)
+        if self.find_danger():
+            self.log_info("dangerous")
+            self.kill_game()
+            raise Exception("dangerous")
+        return super().click(x, y, move_back, name, interval, move, down_time, after_sleep, key)
 
     def info_set(self, key, value):
         if self.current_user:
@@ -344,11 +366,11 @@ class BaseEfTask(BaseTask):
             after_sleep: 点击后等待时间
             key: 鼠标按键('left'/'right'/'middle')
         """
-        self.send_key_down("alt")
+        self.send_key_down("alt")  # 确认使用send_key：alt为系统修饰键，用于alt+点击操作，非游戏可配置热键
         self.sleep(0.5)
         self.click(x=x, y=y, move_back=move_back, name=name, interval=interval, move=move, down_time=down_time,
                    after_sleep=after_sleep, key=key)
-        self.send_key_up("alt")
+        self.send_key_up("alt")  # 确认使用send_key：释放alt修饰键
 
     def screen_center(self) -> tuple[int, int]:
         """获取屏幕中心坐标
@@ -585,7 +607,7 @@ class BaseEfTask(BaseTask):
                 self.log_info("skip_dialog 超时退出")
                 return False
             if self.find_one("skip_dialog_esc", horizontal_variance=0.05):
-                self.send_key("esc", after_sleep=0.1)
+                self.send_key("esc", after_sleep=0.1)  # 确认使用send_key：esc为系统通用退出键，非游戏可配置热键
                 start = time.time()
                 clicked_confirm = False
                 while time.time() - start < 3:
@@ -617,12 +639,13 @@ class BaseEfTask(BaseTask):
             "skip_dialog_confirm", horizontal_variance=0.05, vertical_variance=0.05
         )
 
-    def click_confirm(self, after_sleep=0.5, time_out=5):
+    def click_confirm(self, after_sleep=0.5, time_out=5, recheck_time=0):
         """点击对话框中的"确认"按钮
 
         Args:
             after_sleep: 点击后等待时间（秒）
             time_out: 等待超时时间（秒）
+            recheck_time: 重新检查时间（秒）
 
         """
         start_time = time.time()
@@ -633,6 +656,11 @@ class BaseEfTask(BaseTask):
             confirm = self.find_confirm()
             if confirm:
                 self.click(confirm, after_sleep=after_sleep)
+                if recheck_time > 0:
+                    self.sleep(recheck_time)
+                    if confirm := self.find_confirm():
+                        self.click(confirm, after_sleep=after_sleep)
+                        return True
                 return True
             self.sleep(0.1)
             self.next_frame()
@@ -681,7 +709,7 @@ class BaseEfTask(BaseTask):
         """
         start_time = time.time()
         while True:
-            if time.time() - start_time > 30:
+            if time.time() - start_time > 60:
                 self.log_info("进入好友帝江号超时")
                 return False
             if self.in_friend_boat():
@@ -763,7 +791,6 @@ class BaseEfTask(BaseTask):
 
     def ensure_map(self, addtional_match=None, time_out=30):
         """确保进入地图界面，超时30秒"""
-        self.ensure_main()
         start_time = time.time()
         if addtional_match:
             match = [re.compile("事务")] + addtional_match if isinstance(addtional_match, list) else [
@@ -843,55 +870,3 @@ class BaseEfTask(BaseTask):
             EssenceInfo: 精华信息对象，失败返回None
         """
         return read_essence_info(self)
-
-    def kill_game(self):
-        try:
-
-            hwnd = self.hwnd.hwnd
-            if hwnd:
-                tid, pid = win32process.GetWindowThreadProcessId(hwnd)
-                handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, False, pid)
-                win32api.TerminateProcess(handle, 0)
-                win32api.CloseHandle(handle)
-                self.log_info(f"已终止进程 pid={pid}", notify=True)
-            else:
-                self.log_info("未获取到 hwnd，无法终止进程", notify=True)
-        except Exception as e2:
-            self.log_info(f"终止进程失败: {e2}", notify=True)
-
-    def kill_all_related_processes(self):
-        """尝试杀死游戏进程和本软件自身进程（除当前进程外）"""
-        import os
-        import win32process, win32api, win32con
-        import psutil
-
-        # 1. 杀死游戏进程
-        try:
-            hwnd = getattr(self, "hwnd", None)
-            if hwnd is not None:
-                hwnd_val = getattr(hwnd, "hwnd", None)
-                if hwnd_val:
-                    tid, pid = win32process.GetWindowThreadProcessId(hwnd_val)
-                    handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, False, pid)
-                    win32api.TerminateProcess(handle, 0)
-                    win32api.CloseHandle(handle)
-                    self.log_info(f"已终止游戏进程 pid={pid}", notify=True)
-                else:
-                    self.log_info("未获取到 hwnd，无法终止游戏进程", notify=True)
-            else:
-                self.log_info("未获取到 hwnd 属性，无法终止游戏进程", notify=True)
-        except Exception as e:
-            self.log_info(f"终止游戏进程失败: {e}", notify=True)
-        # 2. 杀死本软件所有同名进程（除当前进程）
-        try:
-            current_pid = os.getpid()
-            exe_name = psutil.Process(current_pid).name()
-            for proc in psutil.process_iter(["pid", "name"]):
-                if proc.info["name"] == exe_name and proc.info["pid"] != current_pid:
-                    try:
-                        proc.kill()
-                        self.log_info(f"已终止本软件进程 pid={proc.info['pid']}", notify=True)
-                    except Exception as e2:
-                        self.log_info(f"终止本软件进程失败: {e2}", notify=True)
-        except Exception as e:
-            self.log_info(f"查找/终止本软件进程失败: {e}", notify=True)

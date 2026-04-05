@@ -11,7 +11,6 @@ from src.tasks.daily.daily_routine_mixin import DailyRoutineMixin
 from src.tasks.daily.daily_shop_mixin import DailyShopMixin
 from src.tasks.daily.daily_trade_mixin import DailyTradeMixin
 
-
 class DailyTask(
     DailyBuyMixin,  # 买物资
     DailyBattleMixin,  # 刷体力
@@ -19,7 +18,7 @@ class DailyTask(
     DailyShopMixin,  # 买信用商店
     DailyRoutineMixin,  # 其它
     DailyLiaisonMixin,  # 送礼
-    AccountMixin,
+    AccountMixin
 ):
     """日常任务聚合执行器。"""
 

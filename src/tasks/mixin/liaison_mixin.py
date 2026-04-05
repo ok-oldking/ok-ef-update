@@ -164,6 +164,7 @@ class LiaisonMixin(NavigationMixin):
 
         self.log_info("前往中央环厅可能失败，尝试后续操作")
         return True
+
     def navigate_to_operator_liaison_station(self):
         """
         自动导航到干员联络站。
@@ -172,6 +173,7 @@ class LiaisonMixin(NavigationMixin):
             LiaisonResult | bool
         """
         self.log_info("开始前往干员联络站")
+        self.ensure_main()
         self.ensure_map()
         self.log_info("打开地图界面")
 
@@ -191,12 +193,12 @@ class LiaisonMixin(NavigationMixin):
             if chat_box:
                 self.log_info("发现干员，点击交互图标")
 
-                self.send_key_down("alt")
+                self.send_key_down("alt")  # 确认使用send_key：alt为系统修饰键，用于alt+点击交互，非游戏可配置热键
                 self.sleep(0.5)
 
                 self.click(chat_box, after_sleep=0)
 
-                self.send_key_up("alt")
+                self.send_key_up("alt")  # 确认使用send_key：释放alt修饰键
 
                 return LiaisonResult.FIND_CHAT_ICON
 
@@ -399,7 +401,7 @@ class LiaisonMixin(NavigationMixin):
         """点击干员聊天交互框"""
         self.log_info("发现干员，点击进行交互")
 
-        self.send_key_down("alt")
+        self.send_key_down("alt")  # 确认使用send_key：alt为系统修饰键，用于alt+点击干员聊天框，非游戏可配置热键
         self.sleep(0.5)
 
         self.click_box(chat_box, after_sleep=0.5)
@@ -412,7 +414,7 @@ class LiaisonMixin(NavigationMixin):
             time_out=1
         )
 
-        self.send_key_up("alt")
+        self.send_key_up("alt")  # 确认使用send_key：释放alt修饰键
 
         self.log_info("干员联络完成")
 
