@@ -18,6 +18,8 @@ gather_list = stages_dict["能量淤积点"]
 
 
 class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
+    CFG_SCROLL_ENABLE = "是否启用滚动放大视角"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.gather_near_transfer_point_dict = dict()
@@ -33,6 +35,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "刷体力开始日期": today_str,  # 默认当天，可自定义
             "刷本序列": "",  # 为空表示不启用自动轮换
             "仅站桩": False,
+            self.CFG_SCROLL_ENABLE: False,
             **{key: "" for key in gather_list},
             "技能释放": "123",
             "启动技能点数": 2,
@@ -67,6 +70,11 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                 "必须为以下之一：\n"
                 + '\n'.join([', '.join(self.stages_list[i:i+4]) for i in range(0, len(self.stages_list), 4)]) + "。\n"
                 f"留空表示不启用自动轮换。"
+            ),
+            self.CFG_SCROLL_ENABLE: (
+                "启用后在对齐滑索时会自动滚动放大视角\n"
+                "可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n"
+                "建议启用此项时不要使用非白发或有白帽角色"
             ),
             **{key: (
                 "需要设好「预刻写属性」。默认留空表示不使用滑索前往，\n"
@@ -176,7 +184,10 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         if zip_line_str:
             self.press_key("f", after_sleep=2)
             zip_line_list = [int(i) for i in zip_line_str.split(",")]
-            self.zip_line_list_go(zip_line_list)
+            self.zip_line_list_go(
+                zip_line_list,
+                need_scroll=self.config.get(self.CFG_SCROLL_ENABLE),
+            )
         self.navigate_until_target(target_ocr_pattern=re.compile("激发"), nav_feature_name=fL.gather_icon_out_map,
                                    time_out=60)
         result = self.wait_ocr(match=re.compile("激发"), box=self.box.bottom_right, time_out=5)
