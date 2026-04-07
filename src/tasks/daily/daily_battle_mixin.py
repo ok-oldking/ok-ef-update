@@ -284,6 +284,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                     self.log_info("等待超时，进入协议空间超时")
                     return False
             prev = win32gui.GetForegroundWindow()
+            self.move_keys("w", duration=0.25)
             while not self.wait_ocr(match=re.compile("触碰"), time_out=1, box=self.box.bottom_right, log=True):
                 self.move_keys('w', duration=0.25)
             back_window(prev)

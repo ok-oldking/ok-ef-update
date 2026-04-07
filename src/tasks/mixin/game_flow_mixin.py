@@ -334,6 +334,7 @@ class GameFlowMixin:
                 re.compile("事务"), re.compile(addtional_match)]
         else:
             match = [re.compile("事务")]
+        self.press_key("m")
         while not self.wait_ocr(match=match, time_out=2, box=self.box.top_left):
             if time.time() - start_time > time_out:
                 raise Exception("进入地图失败")
