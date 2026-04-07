@@ -94,7 +94,7 @@ class LoginMixin(BaseEfTask):
         if not password_square:
             raise RuntimeError("未找到密码输入框（bottom）")
 
-        run_at_window_pos(self.hwnd.hwnd, pyautogui.click, int(731 / 1920 * self.width), int(630 / 1080 * self.height))
+        run_at_window_pos(self.hwnd.hwnd, pyautogui.click, int(731 / 1920 * self.width), int(625 / 1080 * self.height))
         run_at_window_pos(
             self.hwnd.hwnd, pyautogui.click, account[0].x + account[0].width // 2, account[0].y + account[0].height // 2
         )

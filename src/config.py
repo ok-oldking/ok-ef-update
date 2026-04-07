@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 
-version = "v0.2.20"
+version = "v0.2.21"
 
 
 class InteractionOptions(list):
