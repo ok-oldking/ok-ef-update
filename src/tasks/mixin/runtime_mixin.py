@@ -68,11 +68,11 @@ class RuntimeMixin:
     def find_feature(self, feature_name=None, horizontal_variance=0, vertical_variance=0, threshold=0,
                      use_gray_scale=False, x=-1, y=-1, to_x=-1, to_y=-1, width=-1, height=-1, box=None, canny_lower=0,
                      canny_higher=0, frame_processor=None, template=None, match_method=cv2.TM_CCOEFF_NORMED,
-                     screenshot=False, mask_function=None, frame=None):
+                     screenshot=False, mask_function=None, frame=None, limit=0, target_height=0):
         feature_name = self.get_feature_by_resolution(feature_name)
         return super().find_feature(feature_name, horizontal_variance, vertical_variance, threshold, use_gray_scale, x,
                                     y, to_x, to_y, width, height, box, canny_lower, canny_higher, frame_processor,
-                                    template, match_method, screenshot, mask_function, frame)
+                                    template, match_method, screenshot, mask_function, frame, limit, target_height)
 
     def scroll(self, x: int, y: int, count: int) -> None:
         run_at_window_pos(self.hwnd.hwnd, super().scroll, x, y, 0.5, x, y, count)

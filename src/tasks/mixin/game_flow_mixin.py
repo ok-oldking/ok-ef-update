@@ -30,14 +30,15 @@ class GameFlowMixin:
     def login_find_feature(self, feature_name=None, horizontal_variance=0, vertical_variance=0, threshold=0,
                            use_gray_scale=False, x=-1, y=-1, to_x=-1, to_y=-1, width=-1, height=-1, box=None,
                            canny_lower=0, canny_higher=0, frame_processor=None, template=None,
-                           match_method=cv2.TM_CCOEFF_NORMED, screenshot=False, mask_function=None, frame=None):
+                           match_method=cv2.TM_CCOEFF_NORMED, screenshot=False, mask_function=None, frame=None,
+                           limit=0, target_height=0):
         img = self.login_screenshot()
 
         if not isinstance(img, np.ndarray):
             frame = np.array(img)
         return super().find_feature(feature_name, horizontal_variance, vertical_variance, threshold, use_gray_scale, x,
                                     y, to_x, to_y, width, height, box, canny_lower, canny_higher, frame_processor,
-                                    template, match_method, screenshot, mask_function, frame)
+                                    template, match_method, screenshot, mask_function, frame, limit, target_height)
 
     def skip_dialog(self):
         """跳过对话框，自动点击确认或跳过按钮。"""

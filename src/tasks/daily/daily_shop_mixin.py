@@ -29,20 +29,26 @@ class DailyShopMixin(Common):
             return False, sum_credit
         cost = self.refresh_cost_list[self.refresh_count]
         if sum_credit - cost > 210:
-            if not self.wait_click_ocr(match=re.compile("刷新"), time_out=5, box=self.box_of_screen(2/3, 0.5, 1, 1)):
-                return False, sum_credit
+            while not self.wait_click_ocr(match=re.compile("刷新"), time_out=1, box=self.box_of_screen(2/3, 0.5, 1, 1)):
+                if self.wait_ocr(match=re.compile("购买"),box=self.box.top_left, time_out=1):
+                    self.back(after_sleep=1)
+                else:    
+                    return True, sum_credit
             if not self.wait_click_ocr(match=re.compile("确认"), time_out=5, box=self.box.bottom_right):
                 return False, sum_credit
-            self.wait_ui_stable(refresh_interval=0.5)
             sum_credit -= cost
             self.refresh_count += 1
             self.wait_ui_stable(refresh_interval=1)
             return True, sum_credit
         return False, sum_credit
 
-    def back_shop(self):
-        while not self.wait_ocr(match=re.compile("采购"), time_out=1):
+    def back_shop(self, max_retry=10):
+        for _ in range(max_retry):
+            if self.wait_ocr(match=re.compile("采购"), time_out=1):
+                return True
             self.back(after_sleep=1)
+        self.info_set("信用商店警告", f"返回采购页面失败，已重试{max_retry}次")
+        return False
 
     def get_cost(self):
 
@@ -57,7 +63,8 @@ class DailyShopMixin(Common):
                 if m:
                     return int(m.group())
 
-        self.back_shop()
+        if not self.back_shop():
+            self.info_set("信用商店警告", "未能返回采购页面，跳过当前商品")
         return 0
 
     def buy_once(self, sum_credit):
@@ -91,7 +98,8 @@ class DailyShopMixin(Common):
                 match=[re.compile("确认"), re.compile("不足")], time_out=4, box=self.box.bottom_right
             )
             if not result:
-                self.back_shop()
+                if not self.back_shop():
+                    return False, sum_credit, False
                 return True, sum_credit, True
             else:
                 if "不足" in result[0].name:
@@ -106,6 +114,7 @@ class DailyShopMixin(Common):
 
     def credit_shop(self):
         self.credit_good_search_box = self.box_of_screen(200 / 3840, 280 / 2160, 3620 / 3840, 1550 / 2160)
+        self.refresh_count = 0
         self.press_key("f5")
         if not self.wait_click_ocr(match=re.compile("信用"), time_out=7, box=self.box.top_right, recheck_time=1):
             return False
@@ -125,7 +134,7 @@ class DailyShopMixin(Common):
         return True
 
     def buy_left(self, sum_credit):
-        results = self.find_feature(feature_name=fL.credit_can_buy, box=self.credit_good_search_box)
+        results = self.find_feature(feature_name=fL.credit_can_buy, box=self.credit_good_search_box) or []
         for result in results:
             self.click(result)
             self.wait_ui_stable(refresh_interval=0.5)

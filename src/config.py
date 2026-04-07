@@ -5,7 +5,20 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 
-version = "v0.2.19"
+version = "v0.2.20"
+
+
+class InteractionOptions(list):
+    """Display interaction class names in GUI while keeping raw values for indexing."""
+
+    def __iter__(self):
+        for method in super().__iter__():
+            if isinstance(method, type):
+                yield method.__name__
+            elif isinstance(method, str):
+                yield method
+            else:
+                yield str(method)
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -49,6 +62,7 @@ ensure_main_once_action_sleep_option = ConfigOption(
     "Ensure Main Once Action Sleep", {"SingleActionWithDelay": 1.5}, description="Ensure Main Once Action Sleep"
 )
 config = {
+    "custom_tasks": True,
     "debug": False,  # Optional, default: False
     "use_gui": True,  # 目前只支持True
     "config_folder": "configs",  # 最好不要修改
@@ -62,7 +76,8 @@ config = {
     "windows": {  # Windows游戏请填写此设置
         "exe": ["Endfield.exe"],
         # 'hwnd_class': 'UnrealWindow', #增加重名检查准确度
-        "interaction": EfInteraction,
+        # GUI 需要可迭代配置；设备管理器需要类对象，使用包装器同时满足两者。
+        "interaction": InteractionOptions([EfInteraction]),
         # Genshin:某些操作可以后台, 部分游戏支持 PostMessage:可后台点击, 极少游戏支持 ForegroundPostMessage:前台使用PostMessage Pynput/PyDirect:仅支持前台使用
         "capture_method": ["WGC", "BitBlt_RenderFull"],
         # Windows版本支持的话, 优先使用WGC, 否则使用BitBlt_Full. 支持的capture有 BitBlt, WGC, BitBlt_RenderFull, DXGI
@@ -101,7 +116,7 @@ config = {
     "yolo": {"model_path": "assets/models/yolo/best.onnx"},  # YOLO 模型路径（相对项目根目录或绝对路径）
     "gui_title": "ok-ef",  # 窗口名
     "template_matching": {  # 可选, 如使用OpenCV的模板匹配
-        "coco_feature_json": os.path.join("assets", "coco_detection.json"),
+        "coco_feature_json": os.path.join("assets", "coco_annotations.json"),
         # coco格式标记, 需要png图片, 在debug模式运行后, 会对进行切图仅保留被标记部分以减少图片大小
         "default_horizontal_variance": 0.002,  # 默认x偏移, 查找不传box的时候, 会根据coco坐标, match偏移box内的
         "default_vertical_variance": 0.002,  # 默认y偏移
