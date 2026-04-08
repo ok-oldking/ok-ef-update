@@ -2,13 +2,11 @@ import math
 import re
 import time
 
-import win32gui
-
 from src.data.FeatureList import FeatureList as fL
 from src.data.world_map import stages_cost, higher_order_feature_dict
 from src.data.world_map import stages_dict, stages_list
 from src.data.world_map_utils import get_stage_category
-from src.tasks.BaseEfTask import back_window
+from src.tasks.sequence_parser import parse_int_sequence, parse_sequence
 from src.tasks.mixin.battle_mixin import BattleMixin
 from src.tasks.mixin.common import Common
 from src.tasks.mixin.map_mixin import MapMixin
@@ -92,7 +90,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         explain = ""
         try:
             if seq:
-                seq_list = [x.strip() for x in seq.split(",") if x.strip()]
+                seq_list = parse_sequence(seq)
                 # 如果有任何无效副本名，全部放弃自动轮换
                 invalid_stages = [x for x in seq_list if x not in self.stages_list]
                 if invalid_stages:
@@ -183,7 +181,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         zip_line_str = self.config.get(stage_name)
         if zip_line_str:
             self.press_key("f", after_sleep=2)
-            zip_line_list = [int(i) for i in zip_line_str.split(",")]
+            zip_line_list = parse_int_sequence(zip_line_str)
             self.zip_line_list_go(
                 zip_line_list,
                 need_scroll=self.config.get(self.CFG_SCROLL_ENABLE),
@@ -283,11 +281,9 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                 if time.time() - end_time > 300:
                     self.log_info("等待超时，进入协议空间超时")
                     return False
-            prev = win32gui.GetForegroundWindow()
             self.move_keys("w", duration=0.25)
             while not self.wait_ocr(match=re.compile("触碰"), time_out=1, box=self.box.bottom_right, log=True):
                 self.move_keys('w', duration=0.25)
-            back_window(prev)
             self.press_key("f")
         else:
             self.wait_pop_up(time_out=4)
@@ -299,7 +295,6 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         return self.auto_battle(no_battle=no_battle)
 
     def to_end(self, challenge=False):
-        prev = win32gui.GetForegroundWindow()
         if challenge:
             end_feature_name = fL.gather_icon_out_map2
             use_yolo = False
@@ -343,7 +338,6 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                 break
             else:
                 self.move_keys('w', duration=0.25)
-        back_window(prev)
         return True
 
     def get_claim(self, ticket_number, sum_ticket_number):

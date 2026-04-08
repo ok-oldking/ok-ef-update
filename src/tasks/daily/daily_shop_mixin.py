@@ -81,7 +81,7 @@ class DailyShopMixin(Common):
 
     def buy_once(self, sum_credit):
         self.wait_ui_stable(refresh_interval=0.5)
-        results = []
+        normal_results = []
         reserve_credit = self.config.get('信用商店保留信用', 300)
         self.log_info(f"开始信用商店优先购买，当前信用: {sum_credit}，保留信用: {reserve_credit}")
         if not self.back_shop():
@@ -90,11 +90,11 @@ class DailyShopMixin(Common):
         for search in (fL.weapon_quota, fL.orobertyl):
             r = self.find_feature(feature_name=search, box=self.credit_good_search_box)
             if r:
-                results.extend(r)
+                normal_results.extend(r)
 
         discount_list = [99, 95]
 
-        result = self.wait_ocr(
+        discount_results = self.wait_ocr(
             match=[re.compile(str(i)) for i in discount_list],
             box=self.box_of_screen(
                 120 / self.width, 156 / self.height,
@@ -103,8 +103,10 @@ class DailyShopMixin(Common):
             time_out=2
         )
 
-        results.extend(result or [])
-        for idx, item in enumerate(results, start=1):
+        candidates = []
+        candidates.extend((item, False) for item in normal_results)
+        candidates.extend((item, True) for item in (discount_results or []))
+        for idx, (item, is_discount_item) in enumerate(candidates, start=1):
             item_name = getattr(item, "name", None) or f"未知商品#{idx}"
             self.log_info(f"尝试购买优先商品: {item_name}，当前信用: {sum_credit}")
             if not self.back_shop():
@@ -114,8 +116,13 @@ class DailyShopMixin(Common):
             self.wait_ui_stable(refresh_interval=0.5)
             cost = self.get_cost()
             if cost <= 0:
-                self.log_info(f"跳过商品: {item_name}，未识别到有效价格")
-                continue
+                if is_discount_item:
+                    self.log_info(f"商品: {item_name}，未识别到有效价格，折扣商品设置价格为10")
+                    cost = 10
+                else:
+                    self.info_set("信用商店警告", "购买优先商品前未能获取价格信息")
+                    self.log_info(f"购买失败: {item_name}，原因: 未识别到有效价格且非折扣商品")
+                    return False, sum_credit, False
             self.log_info(f"商品价格识别成功: {item_name}，价格: {cost}")
             result = self.wait_click_ocr(
                 match=[re.compile("确认"), re.compile("不足")], time_out=4, box=self.box.bottom_right

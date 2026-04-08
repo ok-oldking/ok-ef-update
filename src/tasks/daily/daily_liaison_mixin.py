@@ -16,6 +16,7 @@ class DailyLiaisonMixin(LiaisonMixin):
         self.default_config.update({
             "帮助": "https://cnb.cool/ok-oldking/ok-ef-update/-/blob/main/docs/日常任务.md",
             "⭐送礼": True,
+            "⭐帝江号一键存放": False,
             "送礼任务最多尝试次数": 2,
             "优先送礼对象": list(self.can_contact_dict.keys())[0],
         })
@@ -24,6 +25,10 @@ class DailyLiaisonMixin(LiaisonMixin):
                 "是否通过「帝江号/干员联络台/赠送礼物」提升员好感度。\n"
                 "如果途中偶遇干员，则直接交互完成送礼。\n"
                 "任务开始时候，角色不能位于「帝江号/剑桥」传送点附近。"
+            ),
+            "⭐帝江号一键存放": (
+                "是否在「帝江号」打开背包并点击「一键存放」。\n"
+                "确认不会自动存可用道具导致治疗药被存入后再开启"
             ),
         })
 
@@ -102,3 +107,21 @@ class DailyLiaisonMixin(LiaisonMixin):
 
         self.log_info("送礼任务最终失败")
         return False
+
+    def boat_one_key_store(self):
+        """在帝江号执行背包一键存放。"""
+        self.info_set("current_task", "boat_one_key_store")
+        if not self.transfer_to_home_point(should_check_out_boat=True):
+            self.log_info("传送到帝江号失败，无法执行一键存放")
+            return False
+        self.press_key("b", after_sleep=1)
+        store_btn = self.wait_ocr(
+            box=self.box_of_screen(0.64, 0.705, 0.69, 0.735, name="onekey_store_area"),
+            match=re.compile(r"存放"),
+            time_out=5,
+        )
+        if not store_btn:
+            self.log_info("未找到“存放”按钮")
+            return False
+        self.click(store_btn[0], move_back=True, after_sleep=0.5)
+        return True
