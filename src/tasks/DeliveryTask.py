@@ -38,6 +38,8 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
     CFG_ONLY_DELIVER = "仅送货"
     CFG_TUTORIAL = "教程"
     CFG_TO_DELIVERY_POINT = "通向送货点"
+    TUTORIAL_LINK = "https://www.bilibili.com/video/BV1LLc7zFEF9"
+    TUTORIAL_TIPS = "游戏内开启全屏模式时请确保游戏内分辨率与你的屏幕分辨率一致"
 
     # 配置值常量
     TEST_NONE = "无"
@@ -57,9 +59,10 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
             self.CFG_ONLY_ACCEPT: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n仅接取7.31w武陵委托，不送货',
             self.CFG_ONLY_DELIVER: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n接取武陵委托后启动自动识别送货',
         })
+        tutorial_value = f"{self.TUTORIAL_LINK}\n{self.TUTORIAL_TIPS}"
         self.default_config.update(
             {
-                self.CFG_TUTORIAL: "https://www.bilibili.com/video/BV1LLc7zFEF9\n游戏内开启全屏模式时请确保游戏内分辨率与你的屏幕分辨率一致",
+                self.CFG_TUTORIAL: tutorial_value,
                 self.CFG_TARGET_TICKET_NUM: "79800",
                 self.CFG_TO_DELIVERY_POINT: "36,14",
                 "常沄": "14,108,64,109,60",
@@ -590,6 +593,8 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
     def run(self):
         """运输委托任务的主入口，支持与日常任务一致的多账号执行逻辑。"""
         try:
+            # 在运行期覆盖教程链接，避免在 __init__ 阶段 self.config 仍为 None。
+            self.config[self.CFG_TUTORIAL] = f"{self.TUTORIAL_LINK}\n{self.TUTORIAL_TIPS}"
             accounts_bool = self.config.get("多账户模式", False)
             if accounts_bool:
                 accounts_list = self.get_account_list()

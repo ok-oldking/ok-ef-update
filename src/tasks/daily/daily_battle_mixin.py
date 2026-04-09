@@ -17,6 +17,11 @@ gather_list = stages_dict["能量淤积点"]
 
 class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
     CFG_SCROLL_ENABLE = "是否启用滚动放大视角"
+    CFG_STAGE_REWARD_TIER = "体力本奖励档位"
+    REWARD_TIER_KEEP = "保持当前"
+    REWARD_TIER_LOW = "低阶"
+    REWARD_TIER_HIGH = "高阶"
+    REWARD_TIER_STAGE_SET = {"干员经验", "干员进阶", "技能提升", "武器进阶"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,6 +35,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "⭐刷体力": True,
             "消耗限时体力药": False,
             "体力本": "干员经验",
+            self.CFG_STAGE_REWARD_TIER: self.REWARD_TIER_KEEP,
             "刷体力开始日期": today_str,  # 默认当天，可自定义
             "刷本序列": "",  # 为空表示不启用自动轮换
             "仅站桩": False,
@@ -54,6 +60,11 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "体力本": (
                 "刷取哪个副本。所选副本必须领完所有等级的首通奖励。"
             ),
+            self.CFG_STAGE_REWARD_TIER: (
+                "用于『干员经验/干员进阶/技能提升/武器进阶』的奖励档位选择。\n"
+                "保持当前：不切换。\n"
+                "低阶/高阶：点击『前往』后自动打开『自选』并切换。"
+            ),
             "仅站桩": (
                 "若启用，则开始挑战后角色原地不动（不输出），\n"
                 "仅对「重度能量淤积点」生效。可以用于建好防御塔情形，避免角色离开副本区域。"
@@ -65,6 +76,9 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "刷本序列": (
                 f"多个副本名用逗号分隔，如：干员经验,干员进阶,钱币收集。\n"
                 f"会根据开始日期自动轮换。\n"
+                "支持在以下副本后追加『低阶』或『高阶』：\n"
+                "干员经验/干员进阶/技能提升/武器进阶。\n"
+                "示例：干员经验低阶,技能提升高阶。\n"
                 "必须为以下之一：\n"
                 + '\n'.join([', '.join(self.stages_list[i:i+4]) for i in range(0, len(self.stages_list), 4)]) + "。\n"
                 f"留空表示不启用自动轮换。"
@@ -80,19 +94,51 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             ) for key in gather_list},
         })
         self.config_type["体力本"] = {"type": "drop_down", "options": self.stages_list}
+        self.config_type[self.CFG_STAGE_REWARD_TIER] = {
+            "type": "drop_down",
+            "options": [self.REWARD_TIER_KEEP, self.REWARD_TIER_LOW, self.REWARD_TIER_HIGH]
+        }
+
+    def _split_stage_name_and_reward_tier(self, raw_stage_name):
+        stage_name = str(raw_stage_name or "").strip()
+        if stage_name.endswith(self.REWARD_TIER_LOW):
+            return stage_name[:-len(self.REWARD_TIER_LOW)].strip(), self.REWARD_TIER_LOW
+        if stage_name.endswith(self.REWARD_TIER_HIGH):
+            return stage_name[:-len(self.REWARD_TIER_HIGH)].strip(), self.REWARD_TIER_HIGH
+        return stage_name, None
+
+    def _format_stage_with_reward_tier(self, stage_name, reward_tier=None):
+        if reward_tier in (self.REWARD_TIER_LOW, self.REWARD_TIER_HIGH):
+            return f"{stage_name}{reward_tier}"
+        return stage_name
 
     def battle(self):
         # 自动根据日期和刷本序列决定刷哪个本
         stage_name = self.config.get("体力本")
+        stage_reward_tier_override = None
+        ignore_config_reward_tier = False
         seq = self.config.get("刷本序列", "")
+        self.log_info(f"检测到刷本序列配置: {seq if seq else '(空)'}")
         start_date = self.config.get("刷体力开始日期", "2026-04-05")
         auto_stage = None
         explain = ""
         try:
             if seq:
                 seq_list = parse_sequence(seq)
+                self.log_info(f"刷本序列解析结果: {seq_list}")
+                seq_with_tier_list = []
+                for raw_stage in seq_list:
+                    parsed_stage_name, parsed_tier = self._split_stage_name_and_reward_tier(raw_stage)
+                    seq_with_tier_list.append(self._format_stage_with_reward_tier(parsed_stage_name, parsed_tier))
+                self.log_info(f"刷本序列标准化: {seq_with_tier_list}")
                 # 如果有任何无效副本名，全部放弃自动轮换
-                invalid_stages = [x for x in seq_list if x not in self.stages_list]
+                invalid_stages = []
+                for raw_stage in seq_list:
+                    parsed_stage_name, parsed_tier = self._split_stage_name_and_reward_tier(raw_stage)
+                    if parsed_stage_name not in self.stages_list:
+                        invalid_stages.append(raw_stage)
+                    elif parsed_tier and parsed_stage_name not in self.REWARD_TIER_STAGE_SET:
+                        invalid_stages.append(raw_stage)
                 if invalid_stages:
                     explain = f"刷体力自动选择失败：刷本序列包含无效副本名 {invalid_stages}，已使用原配置体力本"
                 else:
@@ -110,10 +156,18 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                     else:
                         days = (today - start).days
                         idx = days % len(seq_list)
-                        auto_stage = seq_list[idx]
+                        raw_auto_stage = seq_list[idx]
+                        auto_stage, stage_reward_tier_override = self._split_stage_name_and_reward_tier(raw_auto_stage)
+                        ignore_config_reward_tier = True
+                        self.log_info(
+                            f"今日刷本序列命中: 原始项={raw_auto_stage}, "
+                            f"关卡={auto_stage}, 奖励档位={stage_reward_tier_override or self.REWARD_TIER_KEEP}"
+                        )
+                        tier_hint = f"，奖励档位：{stage_reward_tier_override}" if stage_reward_tier_override else ""
                         explain = (
-                            f"刷体力自动选择: 今天是第{days+1}天，刷本序列=[{','.join(seq_list)}]，"
-                            f"今日副本：{auto_stage}。刷本序列必须为以下之一：{self.stages_list}"
+                            f"刷体力自动选择: 今天是第{days+1}天，"
+                            f"命中序列项：{raw_auto_stage}，"
+                            f"今日副本：{auto_stage}{tier_hint}。"
                         )
         except Exception as e:
             import traceback
@@ -123,6 +177,24 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             self.log_info(explain)
         else:
             self.log_info(explain or "刷体力自动选择失败，使用原配置体力本")
+            if seq:
+                fallback_tier = self.config.get(self.CFG_STAGE_REWARD_TIER, self.REWARD_TIER_KEEP)
+                self.log_info(
+                    f"刷本序列未生效，回退体力本配置: 关卡={stage_name}, "
+                    f"奖励档位={fallback_tier if stage_name in self.REWARD_TIER_STAGE_SET else self.REWARD_TIER_KEEP}"
+                )
+
+        today_reward_tier = (
+            stage_reward_tier_override
+            if ignore_config_reward_tier
+            else self.config.get(self.CFG_STAGE_REWARD_TIER, self.REWARD_TIER_KEEP)
+        )
+        if stage_name not in self.REWARD_TIER_STAGE_SET:
+            today_reward_tier = self.REWARD_TIER_KEEP
+        self.log_info(
+            f"今日最终刷本: {self._format_stage_with_reward_tier(stage_name, today_reward_tier)} "
+            f"(奖励档位={today_reward_tier})"
+        )
         category_name = get_stage_category(stage_name)
         self.ensure_main()
         self.press_key("f8")
@@ -157,7 +229,12 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         if left_ticket < stages_cost[category_name]:
             self.log_info("体力不足")
             return True
-        if not self.to_stage(stage_name, category_name):
+        if not self.to_stage(
+                stage_name,
+                category_name,
+                reward_tier_override=stage_reward_tier_override,
+                ignore_config_tier=ignore_config_reward_tier,
+        ):
             return False
         if category_name != "能量淤积点":
             return self.battle_space(left_ticket, category_name)
@@ -226,7 +303,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                 break
         return True
 
-    def to_stage(self, stage_name, category_name):
+    def to_stage(self, stage_name, category_name, reward_tier_override=None, ignore_config_tier=False):
         """
         通用关卡进入方法：
         1. 点击左侧类别。
@@ -267,11 +344,64 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                     time_out=6,
                 )
                 if enter_bool:
-                    return True
+                    return self._switch_stage_reward_tier(
+                        stage_name,
+                        reward_tier_override=reward_tier_override,
+                        ignore_config_tier=ignore_config_tier,
+                    )
             self.scroll_relative(650 / 1920, 0.5, count=-2)
             self.wait_ui_stable(refresh_interval=0.5)
         return False
         # 如果找到位置，则点击按钮
+
+    def _get_current_stage_reward_tier(self):
+        if self.wait_ocr(match=re.compile("当前"), box=self.box.top, time_out=1, log=True):
+            return self.REWARD_TIER_LOW
+        if self.wait_ocr(match=re.compile("当前"), box=self.box.bottom, time_out=1, log=True):
+            return self.REWARD_TIER_HIGH
+        return None
+
+    def _switch_stage_reward_tier(self, stage_name, reward_tier_override=None, ignore_config_tier=False):
+        if stage_name not in self.REWARD_TIER_STAGE_SET:
+            if reward_tier_override:
+                self.log_info(f"{stage_name} 不支持奖励档位切换，已忽略序列后缀")
+            return True
+
+        if reward_tier_override in (self.REWARD_TIER_LOW, self.REWARD_TIER_HIGH):
+            target_tier = reward_tier_override
+        elif ignore_config_tier:
+            # 启用刷本序列时，未写后缀则保持当前，不读取独立配置项
+            return True
+        else:
+            target_tier = self.config.get(self.CFG_STAGE_REWARD_TIER, self.REWARD_TIER_KEEP)
+        if target_tier == self.REWARD_TIER_KEEP:
+            return True
+
+        if not self.wait_click_ocr(match=re.compile("自选"), box=self.box.bottom_right, time_out=6, after_sleep=1):
+            self.log_info(f"{stage_name} 未识别到『自选』，跳过奖励档位切换")
+            return True
+        self.wait_ui_stable(refresh_interval=0.5)
+        current_tier = self._get_current_stage_reward_tier()
+        if current_tier == target_tier:
+            self.log_info(f"{stage_name} 已是{target_tier}奖励")
+        else:
+            target_box = self.box.top if target_tier == self.REWARD_TIER_LOW else self.box.bottom
+            candidates = self.wait_ocr(
+                match=[re.compile("当前"), re.compile("选择")],
+                box=target_box,
+                time_out=4,
+                log=True,
+            ) or []
+            valid_candidates = [c for c in candidates if "奖励选择" not in c.name]
+            if valid_candidates:
+                self.click(valid_candidates[0], after_sleep=1)
+            else:
+                self.log_info(f"{stage_name} 未识别到{target_tier}对应按钮，保持当前档位")
+
+        if not self.safe_back(match=re.compile("进入"), box=self.box.bottom_right, time_out=10, ocr_time_out=1):
+            self.log_info("切换奖励档位后未返回到『进入』界面")
+            return False
+        return True
 
     def to_battle(self, no_battle: bool = False, challenge_check=False):
         if not challenge_check:

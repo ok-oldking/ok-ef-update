@@ -7,6 +7,8 @@ from src.tasks.mixin.liaison_mixin import LiaisonMixin
 
 
 class DailyLiaisonMixin(LiaisonMixin):
+    HELP_LINK = "https://cnb.cool/ok-oldking/ok-ef-update/-/blob/main/docs/日常任务.md"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.can_contact_dict = get_contact_list_with_feature_list()
@@ -14,7 +16,7 @@ class DailyLiaisonMixin(LiaisonMixin):
         #
         self.config_type["优先送礼对象"] = {"type": "drop_down", "options": list(self.can_contact_dict.keys())}
         self.default_config.update({
-            "帮助": "https://cnb.cool/ok-oldking/ok-ef-update/-/blob/main/docs/日常任务.md",
+            "帮助": self.HELP_LINK,
             "⭐送礼": True,
             "⭐帝江号一键存放": False,
             "送礼任务最多尝试次数": 2,
