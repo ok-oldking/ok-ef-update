@@ -55,7 +55,7 @@ class ZipLineMixin(NavigationMixin):
             start = time.time()
             while True:
                 self.next_frame()
-                self.press_key("e")
+                self.send_key("e") # 游戏内无法修改此按键，故使用底层按键函数
                 self.sleep(0.1)
                 result = self.ocr(
                     match=on_zip_line_stop,

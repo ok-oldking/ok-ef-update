@@ -1,5 +1,6 @@
 ﻿import re
-
+import win32api
+import win32con
 from qfluentwidgets import FluentIcon
 
 from src.data.world_map import item_to_warehouse_dict
@@ -123,13 +124,15 @@ class WarehouseTransferTask(BaseEfTask):
         raise RuntimeError("切换仓库失败：5秒内未检测到“已连接”")
 
     def _ctrl_click(self, box):
-        self.send_key_down("LCONTROL")  # 确认使用send_key：LCONTROL为系统修饰键，用于ctrl+点击多选，非游戏可配置热键
+        win32api.keybd_event(
+            win32con.VK_CONTROL, 0, 0, 0
+        )  # 确认使用send_key：ctrl为系统修饰键，用于ctrl+点击多选，非游戏可配置热键
         try:
             self.sleep(0.03)
             self.click(box, move_back=True, down_time=0.03, after_sleep=0, key="left")
             self.sleep(0.03)
         finally:
-            self.send_key_up("LCONTROL")  # 确认使用send_key：释放LCONTROL修饰键
+            win32api.keybd_event(win32con.VK_CONTROL, 0, win32con.KEYEVENTF_KEYUP, 0)
         self.sleep(0.15)
 
     def run(self):
