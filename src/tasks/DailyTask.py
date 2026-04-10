@@ -1,6 +1,3 @@
-import os
-import shlex
-import subprocess
 from datetime import datetime
 
 from ok import TaskDisabledException
@@ -13,6 +10,7 @@ from src.tasks.daily.daily_liaison_mixin import DailyLiaisonMixin
 from src.tasks.daily.daily_routine_mixin import DailyRoutineMixin
 from src.tasks.daily.daily_shop_mixin import DailyShopMixin
 from src.tasks.daily.daily_trade_mixin import DailyTradeMixin
+from src.tasks.mixin.end_command_mixin import EndCommandMixin
 
 class DailyTask(
     DailyBuyMixin,  # 买物资
@@ -21,6 +19,7 @@ class DailyTask(
     DailyShopMixin,  # 买信用商店
     DailyRoutineMixin,  # 其它
     DailyLiaisonMixin,  # 送礼
+    EndCommandMixin,
     AccountMixin
 ):
     """日常任务聚合执行器。"""
@@ -34,18 +33,19 @@ class DailyTask(
         self.support_multi_account = True
         self.task_status = {"success": [], "failed": []}
         self.default_config.update({"⭐传送到帝江号右侧传送点": True, "发生异常时终止游戏": False, "仅退出游戏": False})
-        self.default_config.update({"⭐执行结尾外部命令": False, "结尾外部命令": ""})
         self.config_description.update(
             {
                 "仅退出游戏": "是否在完成所有任务后仅退出游戏，开启后会自动关闭游戏进程,但不关闭软件\n开启发生异常时终止游戏时此选项不生效",
                 "发生异常时终止游戏": "勾选这个选项：如果「完成后退出」被选定，那么抛出异常也会退出游戏和App。",
-                "⭐执行结尾外部命令": "是否在日常任务末尾执行一次外部命令行程序（不等待）。",
-                "结尾外部命令": (
-                    "需要执行的命令行内容。\n"
-                    "建议：优先绝对路径；路径或参数含空格时按系统 shell 规则加引号。\n"
-                    "暂不兼容多账号模式"
-                ),
             }
+        )
+        self.add_end_command_config(
+            enable_description="是否在日常任务末尾执行一次外部命令行程序。",
+            command_description=(
+                "需要执行的命令行内容。\n"
+                "建议：优先绝对路径；路径或参数含空格时按系统 shell 规则加引号。\n"
+                "开启『结尾外部命令等待退出』可支持多账户模式"
+            ),
         )
         self.current_task_key = None
         self.add_exit_after_config()
@@ -182,34 +182,3 @@ class DailyTask(
         self.task_status["success"].append(key)
         self.current_task_key = None
         return True
-
-    def launch_end_command_non_blocking(self):
-        command = str(self.config.get("结尾外部命令", "")).strip()
-        if not command:
-            self.log_info("结尾外部命令为空，跳过执行")
-            return True
-
-        kwargs = {
-            "shell": False,
-            "close_fds": True,
-            "stdout": subprocess.DEVNULL,
-            "stderr": subprocess.DEVNULL,
-        }
-        if os.name == "nt":
-            kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
-        else:
-            kwargs["start_new_session"] = True
-
-        command_args = None
-        try:
-            command_args = shlex.split(command, posix=(os.name != "nt"))
-            if not command_args:
-                self.log_info("结尾外部命令解析后为空，跳过执行")
-                return True
-            process = subprocess.Popen(command_args, **kwargs)
-            self.log_info(f"已启动结尾外部命令（非阻塞），pid={process.pid}")
-            return True
-        except Exception as e:
-            failed_program = command_args[0] if command_args else command
-            self.log_info(f"启动结尾外部命令失败 ({failed_program}): {e}", notify=True)
-            return False
