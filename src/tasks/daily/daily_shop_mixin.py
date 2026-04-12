@@ -50,6 +50,9 @@ class DailyShopMixin(Common):
             sum_credit -= cost
             self.refresh_count += 1
             self.wait_ui_stable(refresh_interval=1)
+            temp_sum_credit = self.detect_ticket_number()
+            if temp_sum_credit:
+                sum_credit = temp_sum_credit
             self.log_info(f"信用商店刷新成功，消耗信用: {cost}，剩余信用: {sum_credit}")
             return True, sum_credit
         return False, sum_credit
