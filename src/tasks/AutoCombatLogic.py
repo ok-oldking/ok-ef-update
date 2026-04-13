@@ -13,6 +13,8 @@ class AutoCombatLogic:
         self.task = task
 
     def run(self, start_sleep: float = None, no_battle: bool = False):
+        self._last_exit_check_time = 0
+        self._exit_check_interval = 0.5
         task = self.task
         if not task.in_combat(required_yellow=1):
             task.log_info("未检测到战斗状态,退出自动战斗")
@@ -54,56 +56,70 @@ class AutoCombatLogic:
                 time.sleep(wait_time)
 
         while True:
-            if task.use_link_skill():
-                continue
-            if task._check_single_exit_condition():
-                if task.debug:
-                    task.screenshot("out_of_combat")
-                task.log_info("自动战斗结束!", notify=task.config.get("后台结束战斗通知") and task.in_bg())
-                task.log_info("退出战斗主循环")
-                self._end = True
-                pyautogui.mouseUp()
-                break
+            now = time.time()
+            if now - self._last_exit_check_time >= self._exit_check_interval:
+                self._last_exit_check_time = now
+
+                if task._check_single_exit_condition():
+                    if task.debug:
+                        task.screenshot("out_of_combat")
+                    task.log_info("自动战斗结束!", notify=task.config.get("后台结束战斗通知") and task.in_bg())
+                    task.log_info("退出战斗主循环")
+                    self._end = True
+                    pyautogui.mouseUp()
+                    break
             if no_battle:
                 task.sleep(0.5)
                 continue
             task.approach_enemy()
             if not self.rotation_enabled or not self.rotation_active:
+                # 初始化（只执行一次）
+                if not hasattr(self, "normal_skill_index"):
+                    self.normal_skill_index = 0
+                    self.waiting_for_point = False
+                task.next_frame()
+                if task.use_link_skill():
+                    continue
                 if task.use_ult():
                     continue
 
                 skill_count = task.get_skill_bar_count()
 
-                if skill_count >= start_trigger_count:
-                    for skill_key in skill_sequence:
+                # 未达到启动条件 → 什么都不做（非阻塞）
+                if skill_count < start_trigger_count:
+                    continue
 
-                        if not task.in_combat():
-                            break
+                # 当前要释放的技能
+                if self.normal_skill_index >= len(skill_sequence):
+                    self.normal_skill_index = 0
 
-                        while True:
-                            current_points = task.get_skill_bar_count()
-                            time_since_last_skill = time.time() - task.last_skill_time
+                skill_key = skill_sequence[self.normal_skill_index]
 
-                            if current_points >= 1 and time_since_last_skill >= 1.0:
-                                break
+                # 👉 等点数（非阻塞版）
+                current_points = task.get_skill_bar_count()
 
-                            if task.use_ult():
-                                continue
+                if current_points < 1:
+                    # 仍然可以做别的事情
+                    if task.use_ult():
+                        continue
 
-                            if current_points < 0 and (task.ocr_lv() or not task.in_team()):
-                                break
+                    if current_points < 0 and (task.ocr_lv() or not task.in_team()):
+                        self.normal_skill_index = 0
+                        continue
 
-                            task.approach_enemy()
-                            time.sleep(0.05)
+                    task.approach_enemy()
+                    # ❗关键：直接返回下一帧，不阻塞
+                    continue
 
-                        if not task.in_combat():
-                            break
+                # 👉 有点数 → 释放技能
+                if not task.in_combat():
+                    continue
 
-                        task.send_key(skill_key)  # 确认使用send_key：技能键为游戏固定不可配置键，不经过KeyConfigManager管理
-                        task.last_skill_time = time.time()
-                        task.last_op_time = time.time()
+                task.send_key(skill_key)
+                task.log_info(f"Used skill {skill_key}")
 
-                        task.log_info(f"Used skill {skill_key}")
+                # 👉 推进到下一个技能
+                self.normal_skill_index += 1
             else:
                 if time.time() - self.last_rotation_ok_time >= 5:
                     self.rotation_active = False

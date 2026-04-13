@@ -49,9 +49,7 @@ class BattleMixin(BaseEfTask):
         super().__init__(*args, **kwargs)
 
         self.last_no_number_action_time = 0
-        self.last_skill_time = 0
         self.exit_check_count = 0
-        self.last_op_time = 0
         self.config_description.update({
             "技能释放": (
                 "「战技」释放角色顺序，比如123。\n"
@@ -164,17 +162,11 @@ class BattleMixin(BaseEfTask):
         for ult in ults:
             if self.find_one("ult_" + ult):
                 self.send_key_down(ult)  # 确认使用send_key：终极技键位为游戏固定不可配置键，不经过KeyConfigManager管理
-
                 # 等待技能释放导致战斗状态变化
                 self.wait_until(lambda: not self.in_combat())
-
                 self.send_key_up(ult)  # 确认使用send_key：终极技键位为游戏固定不可配置键，释放按键
-
-                # 等待重新进入战斗
-                self.sleep(4)
-
-                self.last_op_time = time.time()
-
+                while not self.in_team():
+                    self.sleep(0.1)
                 return True
 
         return False
@@ -183,10 +175,8 @@ class BattleMixin(BaseEfTask):
         """
         使用连携技能。
         """
-
         if self.find_one("default_link_skill", threshold=0.7):
             self.press_combat_key("e")
-            self.last_op_time = time.time()
             return True
 
         return False
@@ -333,18 +323,6 @@ class BattleMixin(BaseEfTask):
 
         return False
 
-    def perform_attack_weave(self):
-        """
-        执行普通攻击（平A）。
-        """
-
-        attack_interval = 0.12
-
-        if time.time() - getattr(self, 'last_op_time', 0) > attack_interval:
-            self.click(move=False, key='left', down_time=0.005)
-
-            self.last_op_time = time.time()
-
     def approach_enemy(self):
         """战斗中周期触发操作（无伤害数字）"""
         interval = self.config.get("无数字操作间隔", 6)
@@ -355,7 +333,6 @@ class BattleMixin(BaseEfTask):
         self.click(key='middle', down_time=0.002)
         self.dodge_forward(pre_hold=0.05, dodge_down_time=0.03, after_sleep=0.02)
         self.last_no_number_action_time = time.time()
-        self.last_op_time = time.time()
 
     def get_skill_bar_count(self):
         """
