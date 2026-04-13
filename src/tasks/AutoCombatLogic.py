@@ -72,12 +72,12 @@ class AutoCombatLogic:
                 task.sleep(0.5)
                 continue
             task.approach_enemy()
+            task.next_frame()
             if not self.rotation_enabled or not self.rotation_active:
                 # 初始化（只执行一次）
                 if not hasattr(self, "normal_skill_index"):
                     self.normal_skill_index = 0
                     self.waiting_for_point = False
-                task.next_frame()
                 if task.use_link_skill():
                     continue
                 if task.use_ult():
