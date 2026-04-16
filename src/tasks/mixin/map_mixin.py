@@ -1,3 +1,4 @@
+import re
 from src.tasks.BaseEfTask import BaseEfTask
 
 
@@ -53,7 +54,25 @@ class MapMixin(BaseEfTask):
 
         # 执行附近传送点传送
         return self.to_near_transfer_point(test_target_box)
+    def clear_icon_in_map(self, need_reserve_icon_name=None):
+        # 打开“标记显示管理”
+        if not self.wait_click_ocr(
+            match="标记显示管理", box=self.box.bottom_left, time_out=10, log=True, after_sleep=2
+        ):
+            return False
 
+        # 点击“清空选中”，避免地图筛选导致传送点不显示
+        if not self.wait_click_ocr(match="清空选中", box=self.box.bottom_left, time_out=10, log=True, after_sleep=2):
+            return False
+        for _ in range(2):
+            # 如果需要保留特定图标，则点击保留图标
+            if need_reserve_icon_name:
+                if not self.wait_click_ocr(match=re.compile(need_reserve_icon_name), box=self.box.bottom_left, time_out=2, log=True, after_sleep=2):
+                    self.scroll_relative(0.1, 0.5, -1)
+                else:
+                    break
+        # 退出标记管理界面
+        self.back(after_sleep=2)
     def to_near_transfer_point(self, test_target_box):
         """
         在地图上寻找最近的传送点并执行传送。
@@ -76,30 +95,7 @@ class MapMixin(BaseEfTask):
                 True  - 成功执行传送
                 False - 未找到传送点或传送失败
         """
-
-        # 打开“标记显示管理”
-        if not self.wait_click_ocr(
-                match="标记显示管理",
-                box=self.box.bottom_left,
-                time_out=10,
-                log=True,
-                after_sleep=2
-        ):
-            return False
-
-        # 点击“清空选中”，避免地图筛选导致传送点不显示
-        if not self.wait_click_ocr(
-                match="清空选中",
-                box=self.box.bottom_left,
-                time_out=10,
-                log=True,
-                after_sleep=2
-        ):
-            return False
-
-        # 退出标记管理界面
-        self.back(after_sleep=2)
-
+        self.clear_icon_in_map()
         result = None
 
         # 最多尝试 8 次寻找传送点

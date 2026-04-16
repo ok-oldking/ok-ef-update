@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 
-version = "v0.2.36"
+version = "v0.2.37"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -65,6 +65,13 @@ config = {
             'use_openvino': True,
             'use_npu': True,
         }
+    },
+    'template_tab': {
+        # 是否生成标签枚举
+        'generate_label_enum': True,
+
+        # 标签枚举的相对路径
+        'label_enum_relative_path': 'src/data/FeatureList',
     },
     "windows": {  # Windows游戏请填写此设置
         "exe": ["Endfield.exe"],
