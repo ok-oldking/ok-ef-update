@@ -50,7 +50,7 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
         super().__init__(*args, **kwargs)
         self.default_config.update({"_enabled": True})
         self.name = "自动送货"
-        self.description = "仅武陵7.98w/7.31w送货,教程视频 BV1LLc7zFEF9"
+        self.description = "仅武陵送货,教程视频 BV1LLc7zFEF9"
         self.support_schedule_task = True
         self.support_multi_account = True
         self.ends = ["常沄", "资源", "彦宁", "齐纶"]
@@ -65,7 +65,7 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
         self.default_config.update(
             {
                 self.CFG_TUTORIAL: tutorial_value,
-                self.CFG_TARGET_TICKET_NUM: "79800",
+                self.CFG_TARGET_TICKET_NUM: "119000",
                 self.CFG_TO_DELIVERY_POINT: "36,14",
                 "常沄": "14,108,64,109,60",
                 "资源": "14,108,64,109",
