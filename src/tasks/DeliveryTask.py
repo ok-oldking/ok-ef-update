@@ -322,11 +322,10 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
         delivery_box = self.wait_ocr(match="运送委托列表", time_out=5)
         if delivery_box:
             self.click(delivery_box[0], move_back=True, after_sleep=0.5)
-        cx = int(self.width * 0.5)
-        cy = int(self.height * 0.5)
-        for _ in range(6):
-            self.scroll(cx, cy, -8)
-            self.sleep(0.2)
+            self.switch_to_area_delivery_list("武陵")
+        else:
+            self.log_info("未找到‘运送委托列表’，退出")
+            return False
         self.wait_ui_stable(refresh_interval=1)
         enable_wuling = True
         ticket_types = []

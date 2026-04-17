@@ -128,15 +128,20 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
             self.log_error("未找到‘仓储节点’按钮，任务中止。")
             return
 
+        enable_valley = self.config.get("接取谷地券", False)
+        enable_wuling = self.config.get("接取武陵券", True)
         delivery_box = self.wait_ocr(match="运送委托列表", time_out=5)
         if delivery_box:
             self.click(delivery_box[0], move_back=True, after_sleep=0.5)
             # 点击后滚动到底部（多次大幅度向下滚动）
-            cx = int(self.width * 0.5)
-            cy = int(self.height * 0.5)
-            for _ in range(6):
-                self.scroll(cx, cy, -8)
-                self.sleep(0.2)
+            if enable_wuling:
+                self.switch_to_area_delivery_list("武陵")
+            elif enable_valley:
+                self.switch_to_area_delivery_list("四号谷地")
+            else:
+                self.log_info("警告: 未启用任何券种，已进入运送委托列表，但没有筛选区域，任务退出")
+                self.ensure_main()
+                return
         else:
             self.log_error("未找到‘运送委托列表’按钮，任务中止。")
             return
@@ -145,8 +150,6 @@ class TakeDeliveryTask(BaseEfTask, TriggerTask):
         reward_pattern = re.compile(reward_regex, re.I)
 
         # 读取券种配置
-        enable_valley = self.config.get('接取谷地券', False)
-        enable_wuling = self.config.get('接取武陵券', True)
         valley_min = float(self.config.get('接取谷地券最低金额(万)', 5.0))
         valley_max = float(self.config.get('接取谷地券最高金额(万)', 40.0))
         wuling_min = float(self.config.get('接取武陵券最低金额(万)', 5.0))
