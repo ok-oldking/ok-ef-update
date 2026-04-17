@@ -84,7 +84,7 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
         }
         self.config_type[self.CFG_TARGET_TICKET_NUM] = {
             "type": "drop_down",
-            "options": ["79800", "73100"],
+            "options": ["119000","79800", "73100"],
         }
         self.wuling_location = ["武陵城"]
         self.valley_location = ["供能高地", "矿脉源区", "源石研究园"]
@@ -359,11 +359,13 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
                             )
                             feature_list = [
                                 fL.wuling_7_31w,
-                                fL.wuling_7_31w_dark,
                             ]
                             if target_num == "79800":
                                 for i in range(len(feature_list)):
                                     feature_list[i] = feature_list[i].replace("7_31w", "7_98w")
+                            elif target_num == "119000":
+                                for i in range(len(feature_list)):
+                                    feature_list[i] = feature_list[i].replace("7_31w", "11_9w")
                             result = None
                             for feature_name in feature_list:
                                 result = self.find_feature(

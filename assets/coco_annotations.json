@@ -684,6 +684,21 @@
             "id": 134,
             "name": "gather_icon_in_map",
             "supercategory": ""
+        },
+        {
+            "id": 135,
+            "name": "wuling_11_9w",
+            "supercategory": ""
+        },
+        {
+            "id": 136,
+            "name": "wuling_11_9w_2k",
+            "supercategory": ""
+        },
+        {
+            "id": 137,
+            "name": "wuling_11_9w_4k",
+            "supercategory": ""
         }
     ],
     "images": [
@@ -897,7 +912,7 @@
         {
             "license": 0,
             "url": null,
-            "file_name": "images/8.png",
+            "file_name": "images/9.png",
             "height": 1440,
             "width": 2560,
             "date_captured": null,
@@ -1340,6 +1355,24 @@
             "file_name": "images/4.png",
             "width": 1920,
             "height": 1080
+        },
+        {
+            "id": 147,
+            "file_name": "images/5.png",
+            "width": 1920,
+            "height": 1080
+        },
+        {
+            "id": 148,
+            "file_name": "images/8.png",
+            "width": 2560,
+            "height": 1440
+        },
+        {
+            "id": 149,
+            "file_name": "images/0.png",
+            "width": 3840,
+            "height": 2160
         }
     ],
     "annotations": [
@@ -2088,6 +2121,45 @@
                 18
             ],
             "area": 558,
+            "iscrowd": 0
+        },
+        {
+            "id": 53,
+            "image_id": 147,
+            "category_id": 135,
+            "bbox": [
+                1268,
+                295,
+                59,
+                52
+            ],
+            "area": 3068,
+            "iscrowd": 0
+        },
+        {
+            "id": 54,
+            "image_id": 148,
+            "category_id": 136,
+            "bbox": [
+                1689,
+                395,
+                85,
+                67
+            ],
+            "area": 5695,
+            "iscrowd": 0
+        },
+        {
+            "id": 55,
+            "image_id": 149,
+            "category_id": 137,
+            "bbox": [
+                2538,
+                592,
+                115,
+                101
+            ],
+            "area": 11615,
             "iscrowd": 0
         },
         {
