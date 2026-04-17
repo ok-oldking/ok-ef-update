@@ -148,7 +148,7 @@ class GameFlowMixin:
             if self.in_world():
                 self._logged_in = True
                 return True
-            elif self.find_one("monthly_card") or self.find_one("logout"):
+            elif self.find_one("monthly_card") or self.find_one("monthly_card2") or self.find_one("logout"):
                 run_at_window_pos(self.hwnd.hwnd, super().click, self.width // 2, self.height // 2, 1, 0.5, 0.5)
                 return False
             elif close := (

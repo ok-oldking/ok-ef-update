@@ -78,6 +78,7 @@ class FeatureList(str, Enum):
     max_icon = 'max_icon'
     minerals_icon = 'minerals_icon'
     monthly_card = 'monthly_card'
+    mothly_card2 = 'mothly_card2'
     one_click_claim = 'one_click_claim'
     one_task_to_map = 'one_task_to_map'
     operator_liaison_station = 'operator_liaison_station'
