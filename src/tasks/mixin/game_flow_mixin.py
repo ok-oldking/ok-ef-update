@@ -327,12 +327,12 @@ class GameFlowMixin:
             return False
     def switch_to_area_delivery_list(self, target_area):
         """切换到指定区域的交付列表。"""
-        if result:= self.wait_ocr(match=areas_list, box=self.box_of_screen(0, 960 / 1080, 260 / 1920, 1),time_out=5):
-            if target_area == result[0].name:
+        if result:= self.wait_ocr(match=[re.compile(area) for area in areas_list], box=self.box_of_screen(0, 960 / 1080, 260 / 1920, 1),time_out=5):
+            if target_area in result[0].name:
                 return True
             else:
                 self.click(result[0], move_back=True)
-                self.wait_click_ocr(match=target_area, box=self.box_of_screen(0, (960-60*len(areas_list)) / 1080, 260 / 1920, 1), time_out=5)
+                self.wait_click_ocr(match=re.compile(target_area), box=self.box_of_screen(0, (960-60*len(areas_list)) / 1080, 260 / 1920, 1), time_out=5)
                 return True
     def ensure_map(self, addtional_match=None, time_out=30):
         """确保进入地图界面。"""
