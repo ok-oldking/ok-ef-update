@@ -69,9 +69,10 @@ DailyTask
  ├── DailyBuyMixin        (买物资)
  ├── DailyBattleMixin     (刷体力)  ─── BattleMixin, MapMixin, ZipLineMixin
  ├── DailyTradeMixin      (买卖货)  ─── NavigationMixin
- ├── DailyShopMixin       (信用商店)
+ ├── DailyShopMixin       (买信用商店)
  ├── DailyRoutineMixin    (其它日常) ── LiaisonMixin ─── NavigationMixin
  ├── DailyLiaisonMixin    (送礼)    ─── LiaisonMixin
+ ├── EndCommandMixin      (结尾外部命令)
  └── AccountMixin         (多账号)  ─── LoginMixin
 ```
 
@@ -139,7 +140,8 @@ ok-end-field/
 │       ├── WarehouseTransferTask.py # 一次性任务：跨仓库物品转移
 │       │
 │       ├── account/
-│       │   └── account_mixin.py # 多账号模式：账号列表解析、切号逻辑
+│       │   ├── account_mixin.py        # 多账号模式：账号列表解析、切号逻辑
+│       │   └── account_scope_store.py  # 账号作用域配置文件读写（JSON 持久化）
 │       │
 │       ├── daily/             # DailyTask 的子 Mixin，每个文件对应一组日常子任务
 │       │   ├── __init__.py
@@ -152,16 +154,21 @@ ok-end-field/
 │       │
 │       └── mixin/             # 通用能力 Mixin（跨任务复用）
 │           ├── __init__.py
+│           ├── account_override_mixin.py # 账号上下文配置覆盖：按账号动态替换任务配置项
 │           ├── battle_mixin.py    # 战斗能力：技能释放、必杀、连携技、战斗结束检测、排轴
 │           ├── common.py          # 公共数据结构与工具：LiaisonResult、GoodsInfo、build_name_patterns
+│           ├── end_command_mixin.py # 结尾外部命令：任务完成后执行自定义命令行程序
+│           ├── game_flow_mixin.py # 登录弹窗与主界面流程：login_screenshot/ocr、ensure_main、场景判断
 │           ├── liaison_mixin.py   # 干员联络：传送帝江号、导航联络站、送礼交互
 │           ├── login_mixin.py     # 登录流程：登出→密码登录→等待进入主界面
 │           ├── map_mixin.py       # 地图操作：打开任务界面→定位传送点→执行传送
 │           ├── navigation_mixin.py# 导航循环：持续前进+动态对齐目标直到到达
+│           ├── process_manager.py # 进程管理：kill_game / kill_all_related_processes
+│           ├── runtime_mixin.py   # 运行时能力：find_feature、按键、鼠标、YOLO、UI 稳定检测等
 │           └── zip_line_mixin.py  # 滑索操作：对齐滑索距离标识→按 E 连续移动
 │
 ├── assets/                    # 静态资源（由 ok-script debug 模式自动裁剪生成）
-│   ├── coco_detection.json    # COCO 格式标注，定义模板图片在游戏截图中的位置
+│   ├── coco_annotations.json  # COCO 格式标注，定义模板图片在游戏截图中的位置
 │   ├── images/                # 模板匹配图片（文件名对应 FeatureList 枚举值）
 │   ├── items/images/          # 物品图标模板（用于仓库转移物品识别）
 │   └── models/yolo/best.onnx  # YOLOv8 战斗结束检测模型
@@ -170,7 +177,22 @@ ok-end-field/
 │   ├── 日常任务.md
 │   ├── 体力本.md
 │   ├── 排轴.md
-│   └── 自动送货.md
+│   ├── 自动战斗.md
+│   ├── 自动送货.md
+│   ├── 运送委托接取.md
+│   ├── 仓库物品转移.md
+│   ├── 毕业基质识别.md
+│   ├── 账号配置用户指南.md
+│   ├── 账号唯一ID与多账户覆盖默认逻辑.md
+│   └── dev/                   # 面向开发者的技术文档
+│       ├── QUICKSTART.md
+│       ├── DEVELOPMENT.md
+│       ├── API.md
+│       ├── 文字识别示例.md
+│       ├── 图像模板匹配示例.md
+│       ├── 滑索与送货逻辑.md
+│       ├── 键盘操作体系.md
+│       └── 账号唯一ID与多账户覆盖默认逻辑.md
 │
 ├── target_doc/                # 待补充文档（需开发者填写）
 │   └── 自动大世界收菜.md
@@ -197,7 +219,7 @@ ok-end-field/
 │   │   └── mirrorchyan_release_note.yml # Mirror 酱发布说明
 │   └── ISSUE_TEMPLATE/            # Bug 报告模板
 │
-└── x-anylabeling-asset/       # AnyLabeling 标注工具配置（用于标注新模板图片）
+└── ok_templates/              # 子模块：AnyLabeling 标注工具配置（用于标注新模板图片）
 ```
 
 ---
@@ -283,10 +305,10 @@ python main_debug.py
 
 ### 5.4 添加新的模板图片（Feature）
 
-1. 在 `main_debug.py` 模式下运行，框架会根据 `assets/coco_detection.json` 自动裁剪保留标注区域。
-2. 使用 **AnyLabeling**（配置在 `x-anylabeling-asset/`）对新截图打矩形框标注，导出 COCO JSON，合并到 `assets/coco_detection.json`。
-3. 运行 `compress.py`（cwd 为项目根目录），脚本会自动压缩图片并更新 `src/data/FeatureList.py`（无需手动填写）。
-4. 在代码中通过 `self.find_feature(fL.my_new_feature)` 调用。
+1. 以 `main_debug.py` 模式启动程序，框架会根据 `ok_templates/` 子模块下的文件数据自动生成标签列表。
+2. 点击 GUI 左侧的**模板 tab**，即可查看所有已加载的截图及其对应的标签 label（详细机制见 ok-script 库文档）。
+3. 在 `ok_templates/` 中添加或更新标注文件后，重启程序即可在模板 tab 中看到新特征。
+4. 在代码中通过 `self.find_feature(fL.my_new_feature)` 调用新特征。
 
 > 分辨率适配：若需要支持 2K/4K，按命名约定 `feature_name_2k`、`feature_name_4k` 提供对应尺寸的图片，`BaseEfTask.get_feature_by_resolution()` 会自动按分辨率选择。
 
@@ -332,18 +354,17 @@ self.press_key('f')          # 交互键，默认 'f'，用户可自定义
 self.send_key('f')
 ```
 
-**2. `move_keys`（移动按键，仅用于方向键组合）**
+**2. `self.move_keys`（移动按键，仅用于方向键组合）**
 
 ```python
-from src.interaction.move_interaction import move_keys
-
-move_keys(hwnd, keys, duration)
+self.move_keys(keys, duration, need_back=False)
 ```
 
 - `keys`：`str` 或 `list[str]`，仅限 `"w"` / `"a"` / `"s"` / `"d"`
 - `duration`：按住时长（秒）
+- `need_back`：`True` 时发送前激活游戏窗口，结束后恢复原前台窗口
 
-此函数通过 `keybd_event` 模拟原始按键，适用于需要精确控制方向键持续时间的场景（如自动寻路移动）。方向键当前不在自定义热键范围内，可直接使用字面值。
+此方法通过 `keybd_event` 模拟原始按键，适用于需要精确控制方向键持续时间的场景（如自动寻路移动）。方向键当前不在自定义热键范围内，可直接使用字面值。底层实现位于 `src/interaction/Key.py`。
 
 ### 5.7 代码规范
 

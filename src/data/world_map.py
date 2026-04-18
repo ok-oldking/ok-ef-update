@@ -2,7 +2,7 @@ from src.data.FeatureList import FeatureList as fL
 
 areas_list = ["武陵", "四号谷地"]
 outpost_dict = {
-    "武陵": ["天王坪援建点"],
+    "武陵": ["天王坪援建点", "心脏修缮站"],
     "四号谷地": ["难民暂居处", "基建前站", "重建指挥部"]
 }
 goods_dict = {
@@ -24,6 +24,7 @@ goods_dict = {
         "低容武陵电池",
         "芽针针剂",
         "锦草软饮",
+        "重息壤",
     ]
 }
 exchange_goods_dict = {

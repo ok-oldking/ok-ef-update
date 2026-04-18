@@ -239,10 +239,6 @@ class BattleMixin(BaseEfTask):
         in_team = self.in_team()
 
         if not (has_lv or not in_team):
-            self.log_info(
-                f"退出检查失败: UI状态不符 "
-                f"(has_lv={has_lv}, in_team={in_team})"
-            )
             return False
 
         self.log_info(

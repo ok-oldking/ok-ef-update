@@ -64,6 +64,8 @@ def find_feature(
     screenshot=False,
     mask_function=None,
     frame=None,
+    limit=0,
+    target_height=0,
 )
 ```
 
@@ -74,11 +76,11 @@ def find_feature(
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `feature_name` | `FeatureList` \| `str` | 特征名（枚举成员或字符串） |
-| `box` | `Box \| None` | 限制搜索区域；`None` 表示全屏 |
+| `box` | `Box \| None` | 限制搜索区域；`None` 时框架从 `coco_annotations.json` 读取该模板的标注位置作为默认搜索范围 |
 | `threshold` | `float` | 匹配阈值，默认 `0`（使用框架默认值） |
 | `use_gray_scale` | `bool` | 是否转灰度匹配 |
-| `horizontal_variance` | `int` | 水平搜索扩展像素 |
-| `vertical_variance` | `int` | 垂直搜索扩展像素 |
+| `horizontal_variance` | `float` | 在默认搜索区域基础上向 x 方向扩展的相对比例偏差（如 `0.01` 表示屏幕宽度的 1%） |
+| `vertical_variance` | `float` | 在默认搜索区域基础上向 y 方向扩展的相对比例偏差（如 `0.01` 表示屏幕高度的 1%） |
 | `frame` | `ndarray \| None` | 传入指定帧，`None` 则自动截取最新帧 |
 
 ```python
@@ -189,15 +191,29 @@ result = self.wait_ocr(match="确认", box=self.box.center, time_out=10)
 ```python
 def wait_click_ocr(
     self,
-    match,
+    x=0, y=0,
+    to_x=1, to_y=1,
+    width=0, height=0,
     box=None,
-    time_out=5,
-    after_sleep=0.3,
-    **kwargs,
-) -> bool
+    name=None,
+    match=None,
+    threshold=0,
+    frame=None,
+    target_height=0,
+    time_out=0,
+    raise_if_not_found=False,
+    recheck_time=0,
+    after_sleep=0,
+    post_action=None,
+    log=False,
+    screenshot=False,
+    settle_time=-1,
+    lib='default',
+    alt: bool = False,
+)
 ```
 
-等待 OCR 匹配成功后点击匹配区域。成功返回 `True`，超时返回 `False`。
+等待 OCR 匹配成功后点击匹配区域。成功返回匹配结果，超时返回 `None`。`alt=True` 时使用 Alt+点击。
 
 ```python
 self.wait_click_ocr(match="开始", box=self.box.bottom, time_out=8)
@@ -263,6 +279,8 @@ def click(
     down_time=0.01,
     after_sleep=0,
     key='left',
+    hcenter=False,
+    vcenter=False,
 )
 ```
 
@@ -403,32 +421,17 @@ def active_and_send_mouse_delta(
 def press_key(
     self,
     key: str,
-    **kwargs,
-)
-```
-
-发送通用按键，`key` 为热键名称（如 `'f'`、`'esc'`、`'space'`）。`kwargs` 透传给底层框架（如 `after_sleep`）。
-
----
-
-#### `press_game_key`
-
-```python
-def press_game_key(
-    self,
-    key: str,
-    key_type: str = 'common',
     down_time: float = 0.02,
     after_sleep: float = 0,
     interval: int = -1,
 )
 ```
 
-发送游戏通用热键，`key` 会经过 `KeyConfigManager.resolve_common_key()` 转换，自动适配用户自定义按键。
+发送通用热键（`DEFAULT_COMMON_KEYS` 中定义的按键，如交互键、背包键等）。`key` 为默认按键字面值，框架通过 `KeyConfigManager.resolve_key()` 自动替换为用户自定义值。
 
 ```python
-self.press_game_key('m')   # 打开地图（默认 M 键，支持用户自定义）
-self.press_game_key('f')   # 交互键（默认 F）
+self.press_key('f')          # 交互键，默认 'f'，支持用户自定义
+self.press_key('m')          # 地图键，默认 'm'
 ```
 
 ---
@@ -439,11 +442,13 @@ self.press_game_key('f')   # 交互键（默认 F）
 def press_industry_key(
     self,
     key: str,
-    **kwargs,
+    down_time: float = 0.02,
+    after_sleep: float = 0,
+    interval: int = -1,
 )
 ```
 
-发送集成工业专用热键，经 `resolve_industry_key()` 转换。
+发送集成工业专用热键（`DEFAULT_INDUSTRY_KEYS`），经 `resolve_industry_key()` 转换。
 
 ---
 
@@ -453,11 +458,13 @@ def press_industry_key(
 def press_combat_key(
     self,
     key: str,
-    **kwargs,
+    down_time: float = 0.02,
+    after_sleep: float = 0,
+    interval: int = -1,
 )
 ```
 
-发送战斗专用热键，经 `resolve_combat_key()` 转换。
+发送战斗专用热键（`DEFAULT_COMBAT_KEYS`），经 `resolve_combat_key()` 转换。
 
 ---
 

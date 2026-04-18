@@ -104,5 +104,4 @@ config = {
 
 | 文档 | 说明 |
 |------|------|
-| [DEVELOPMENT.md](DEVELOPMENT.md) | 完整架构、目录结构、CI/CD |
-| [API.md](API.md) | BaseEfTask、Mixin、ScreenPosition 等详细 API |
+| [文字识别示例.md](文字识别示例.md) | ocr / wait_ocr / click / wait_click_ocr 完整示例任务 |

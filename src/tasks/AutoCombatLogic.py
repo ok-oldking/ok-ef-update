@@ -17,7 +17,11 @@ class AutoCombatLogic:
         self._exit_check_interval = 0.5
         task = self.task
         if not task.in_combat(required_yellow=1):
-            task.log_info("未检测到战斗状态,退出自动战斗")
+            now = time.time()
+            last = getattr(task, '_last_no_combat_log_time', 0)
+            if now - last >= 5:
+                task.log_info("未检测到战斗状态,退出自动战斗")
+                task._last_no_combat_log_time = now
             task.sleep(0.5)
             return False
         self.rotation_enabled = False
