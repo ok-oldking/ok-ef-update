@@ -140,3 +140,4 @@ class FeatureList(str, Enum):
     wuling_7_98w_dark_4k = 'wuling_7_98w_dark_4k'
     xaihi_contact = 'xaihi_contact'
     yvonne_contact = 'yvonne_contact'
+    zhuang_fangyi_contact = 'zhuang_fangyi_contact'

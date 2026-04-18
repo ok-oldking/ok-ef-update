@@ -1,4 +1,9 @@
 characters = {
+    "zhuang_fang_yi":{
+        "zh":"庄方宜",
+        "en":"zhuang_fangyi",
+        "stars":6
+    },
     "luo_qian":{
         "zh":"洛茜",
         "en":"rossi",
