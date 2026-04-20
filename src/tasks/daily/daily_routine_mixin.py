@@ -586,7 +586,7 @@ class DailyRoutineMixin(LiaisonMixin, Common):
 
         if not self.wait_click_ocr(
                 match=re.compile("制作"),
-                box=self.box.bottom_right,
+                box=self.box_of_screen(2050/2560, 1250/1440, 1, 1),
                 time_out=5
         ):
             self.log_info("未找到制作按钮，任务失败")

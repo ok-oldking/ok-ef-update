@@ -340,6 +340,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "供能高地": self.box.bottom_right,
             "武陵城": self.box.top,
             "清波寨": self.box.top,
+            "首墩": self.box.top,
         })
 
     def battle_gather(self, left_ticket, stage_name, category_name, no_battle=False):
