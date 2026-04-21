@@ -13,7 +13,7 @@ class AccountMixin(LoginMixin):
         self.config_description.update({
             "多账户模式": (
                 "是否启用多账户模式\n"
-                "需要已登录任意账号"
+                "需要已登录任意账号,可能不支持全屏游戏"
             ),
             "多账户独立配置": (
                 "是否启用账号独立配置覆盖\n"

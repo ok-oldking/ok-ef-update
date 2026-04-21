@@ -56,8 +56,14 @@ class LoginMixin(BaseEfTask):
         password_square = self.login_ocr(match=re.compile("密码"), box=self.box.center)
         if not password_square:
             raise RuntimeError("未找到密码输入框（bottom）")
-
-        run_at_window_pos(self.hwnd.hwnd, pyautogui.click, int(954 / 2560 * self.width), int(797 / 1440 * self.height))
+        ok_text = self.login_ocr(match=re.compile("同意"), box=self.box.center)
+        if ok_text:
+            ok_x = ok_text[0].x -int((3/5) * (password_square[0].x-ok_text[0].x))
+            ok_y = ok_text[0].y + ok_text[0].height // 2
+        else:
+            ok_x = int(954 / 2560 * self.width)
+            ok_y = int(797 / 1440 * self.height)
+        run_at_window_pos(self.hwnd.hwnd, pyautogui.click, ok_x, ok_y)
         run_at_window_pos(
             self.hwnd.hwnd, pyautogui.click, account[0].x + account[0].width // 2, account[0].y + account[0].height // 2
         )
@@ -104,6 +110,7 @@ class LoginMixin(BaseEfTask):
 
             if not ocr_result:
                 if one_ok:
+                    result = True
                     self.log_error("已经登录后且未检测到‘" + text + "’，说明进入登录页面")
                     break
                 self.sleep(1)
@@ -119,7 +126,6 @@ class LoginMixin(BaseEfTask):
             )
 
             self.sleep(1)  # 给UI反应时间
-
             # ✅ recheck：看“" + text + "”是否还在
             check = self.login_ocr(match=re.compile(text), box=self.box.bottom)
 
