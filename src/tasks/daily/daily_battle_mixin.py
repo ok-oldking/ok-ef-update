@@ -324,12 +324,16 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                     no_battle=self.config.get("仅站桩", False),
                 )
             except Exception as e:
-                # 能量淤积点情况复杂，出现异常的概率比较大，单独截图以便分析。
                 self.log_info(f"battle_gather 异常: {e}\n{traceback.format_exc()}")
-                self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyBattleMixin_battleGather_Exception')
+                self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyBattleMixin_battleGather_Exception_{category_name}_{stage_name}')
                 return False
-        # 协议空间 or 危境预演
-        return self.battle_space(left_ticket, stage_name, category_name)
+        else: # 协议空间 or 危境预演
+            try:
+                return self.battle_space(left_ticket, stage_name, category_name)
+            except Exception as e:
+                self.log_info(f"battle_space 异常: {e}\n{traceback.format_exc()}")
+                self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyBattleMixin_battleSpace_Exception_{category_name}_{stage_name}')
+                return False
 
     def _init_gather_transfer_points(self):
         """设置传送点特征搜索区。"""

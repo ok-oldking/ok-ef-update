@@ -192,7 +192,7 @@ def active_and_send_mouse_delta(hwnd, dx=1, dy=1, activate=True, only_activate=F
 
 
 # ===== control =====
-def move_to_target_once(hwnd, ocr_obj, screen_center_func, max_step=100, min_step=20, slow_radius=200):
+def move_to_target_once(hwnd, ocr_obj, screen_center_func, max_step=100, min_step=20, slow_radius=200, deadzone=4):
     """
     根据OCR识别结果，将鼠标向目标位置移动一次。
 
@@ -209,6 +209,7 @@ def move_to_target_once(hwnd, ocr_obj, screen_center_func, max_step=100, min_ste
         max_step (int): 最大移动步长
         min_step (int): 最小移动步长
         slow_radius (int): 减速半径
+        deadzone (int): 停止移动的死区半径
 
     Returns:
         tuple[int,int] | None:
@@ -228,7 +229,7 @@ def move_to_target_once(hwnd, ocr_obj, screen_center_func, max_step=100, min_ste
 
     # 计算移动向量
     dx, dy = calc_direction_step(
-        center_pos, target_center, max_step=max_step, min_step=min_step, slow_radius=slow_radius
+        center_pos, target_center, max_step=max_step, min_step=min_step, slow_radius=slow_radius, deadzone=deadzone
     )
 
     # 如果需要移动

@@ -38,6 +38,16 @@ def _back_window(prev):
 
 class RuntimeMixin:
     """视觉识别、按键输入、鼠标控制与模型加载能力。"""
+    BASE_WIDTH = 1920
+    BASE_HEIGHT = 1080
+
+    def resolution_scale(self) -> float:
+        width = getattr(self, "width", self.BASE_WIDTH) or self.BASE_WIDTH
+        height = getattr(self, "height", self.BASE_HEIGHT) or self.BASE_HEIGHT
+        return min(width / self.BASE_WIDTH, height / self.BASE_HEIGHT)
+
+    def scale_distance(self, value: int | float, minimum: int = 1) -> int:
+        return max(minimum, int(round(value * self.resolution_scale())))
 
     def find_danger(self):
         danger_group_fixed = ["danger_" + str(i) for i in range(3, 6)]
@@ -75,9 +85,35 @@ class RuntimeMixin:
                                     template, match_method, screenshot, mask_function, frame, limit, target_height)
 
     def scroll(self, x: int, y: int, count: int) -> None:
+        """按屏幕绝对像素坐标滚轮。
+
+        Args:
+            x: 滚动位置的绝对像素 X 坐标
+            y: 滚动位置的绝对像素 Y 坐标
+            count: 滚动量。
+                正数（向上滚动）：地图 UI 放大视角 / 列表 UI 向上翻页显示靠前内容。
+                负数（向下滚动）：地图 UI 缩小视角或向下平移 / 列表 UI 向下翻页显示靠后内容。
+
+        适用场景：
+        - 地图 UI：已确定地图中心/图标附近的像素坐标时，精确缩放或平移视角。
+        - 列表 UI：已通过 OCR/特征拿到某一行条目的绝对坐标时，在该条目处滚动翻页。
+        """
         run_at_window_pos(self.hwnd.hwnd, super().scroll, x, y, 0.5, x, y, count)
 
     def scroll_relative(self, x: float, y: float, count: int) -> None:
+        """按屏幕相对坐标比例滚轮（x/y 范围 0~1）。
+
+        Args:
+            x: 滚动位置的相对 X 坐标（0~1，0 为左边缘，1 为右边缘）
+            y: 滚动位置的相对 Y 坐标（0~1，0 为上边缘，1 为下边缘）
+            count: 滚动量。
+                正数（向上滚动）：地图 UI 放大视角 / 列表 UI 向上翻页显示靠前内容。
+                负数（向下滚动）：地图 UI 缩小视角或向下平移 / 列表 UI 向下翻页显示靠后内容。
+
+        适用场景：
+        - 地图 UI：用 (0.5, 0.5) 等比例坐标在地图中心连续缩放，适配不同分辨率。
+        - 列表 UI：在固定相对区域（如左侧列表 0.1/0.5）滚动查找条目，避免硬编码像素。
+        """
         run_at_window_pos(self.hwnd.hwnd, super().scroll_relative, int(x * self.width), int(y * self.height), 0.5, x,
                           y, count)
 
@@ -280,7 +316,12 @@ class RuntimeMixin:
 
     def info_set(self, key, value):
         if self.current_user:
-            key = f"{key}({self.current_user[-4:]})"
+            suffix = self.current_user[-4:] if len(self.current_user) >= 4 else self.current_user
+            key = f"{key}({suffix})"
+
+        if value is not None:
+            value = str(value).replace("⭐", "")
+
         return super().info_set(key, value)
 
     def press_key(self, key: str, down_time: float = 0.02, after_sleep: float = 0, interval: int = -1):
@@ -318,14 +359,19 @@ class RuntimeMixin:
     def dodge_backward(self, pre_hold: float = 0.004, dodge_down_time: float = 0.003, after_sleep: float = 0.005):
         self._dodge_with_direction('s', pre_hold=pre_hold, dodge_down_time=dodge_down_time, after_sleep=after_sleep)
 
-    def move_to_target_once(self, ocr_obj, max_step=100, min_step=20, slow_radius=200):
+    def move_to_target_once(self, ocr_obj, max_step=100, min_step=20, slow_radius=200, deadzone=4):
+        scaled_max_step = self.scale_distance(max_step)
+        scaled_min_step = min(scaled_max_step, self.scale_distance(min_step))
+        scaled_slow_radius = self.scale_distance(slow_radius)
+        scaled_deadzone = self.scale_distance(deadzone)
         return move_to_target_once_impl(
             self.hwnd.hwnd,
             ocr_obj,
             self.screen_center,
-            max_step=max_step,
-            min_step=min_step,
-            slow_radius=slow_radius,
+            max_step=scaled_max_step,
+            min_step=scaled_min_step,
+            slow_radius=scaled_slow_radius,
+            deadzone=scaled_deadzone,
         )
 
     def active_and_send_mouse_delta(self, dx=1, dy=1, activate=True, only_activate=False, delay=0.02, steps=3):

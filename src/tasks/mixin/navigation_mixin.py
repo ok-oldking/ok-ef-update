@@ -131,6 +131,7 @@ class NavigationMixin(BaseEfTask):
             max_step=100,
             min_step=20,
             slow_radius=200,
+            deadzone=4,
             once_time=0.5,
             tolerance=TOLERANCE,
             ocr_frame_processor_list=None
@@ -149,10 +150,11 @@ class NavigationMixin(BaseEfTask):
             back_prev: True时对中完成后返回上一个窗口
             raise_if_fail: True时对中失败抛出异常，False时返回False
             is_num: 数字型目标Y坐标微调（用于识别数字时的位置校正）
-            need_scroll: True时在对中过程中自动滚动（通常用于列表)
+            need_scroll: True时在对中过程中自动滚动放大视角（常用于滑索数字对中/列表滚动两类UI）
             max_step: 单次移动最大步长(像素)
             min_step: 单次移动最小步长(像素)
             slow_radius: 接近目标时减速的半径范围(像素)
+            deadzone: 鼠标停止移动的死区半径(像素)
             once_time: 每次循环最小耗时(秒)，保证操作频率
             tolerance: 目标中心与屏幕中心的容忍偏差(像素)，默认50，偏差在范围内判定成功
             ocr_frame_processor_list: OCR帧处理函数列表(可用于色彩隔离等预处理)
@@ -163,6 +165,8 @@ class NavigationMixin(BaseEfTask):
         Raises:
             Exception: 对中失败且raise_if_fail=True时抛出异常
         """
+        scaled_tolerance = self.scale_distance(tolerance)
+
         if box:
             feature_box = box
         else:
@@ -262,19 +266,24 @@ class NavigationMixin(BaseEfTask):
                 dy = target_center[1] - screen_center_pos[1]
 
                 # 如果目标在容忍范围内
-                if abs(dx) <= tolerance and abs(dy) <= tolerance:
+                if abs(dx) <= scaled_tolerance and abs(dy) <= scaled_tolerance:
                     return True
                 else:
                     move_bool = True
-                    dx, dy = self.move_to_target_once(result, max_step=max_step, min_step=min_step,
-                                                      slow_radius=slow_radius)
+                    dx, dy = self.move_to_target_once(
+                        result,
+                        max_step=max_step,
+                        min_step=min_step,
+                        slow_radius=slow_radius,
+                        deadzone=deadzone,
+                    )
                     sum_dx += dx
                     sum_dy += dy
 
             else:
                 # 每次 OCR 失败，直接随机移动
                 move_bool = True
-                max_offset = 60  # 最大随机偏移
+                max_offset = self.scale_distance(60)  # 最大随机偏移
                 if last_target:
                     decay = 0.9 ** last_target_fail_count
                     # 计算目标中心到屏幕中心的偏移
@@ -331,9 +340,10 @@ class NavigationMixin(BaseEfTask):
                 scroll_bool = True
                 # cx = int(self.width * 0.5)
                 # cy = int(self.height * 0.5)
-                for _ in range(6):
+                for _ in range(2):
                     # self.scroll(cx, cy, 8)
-                    pyautogui.scroll(20)
+                    # 20 在实测中放大幅度偏小，提升到 80 以便更快拉近视角提高对中可见性
+                    pyautogui.scroll(int(self.resolution_scale()*400))
                     self.sleep(1)
         if raise_if_fail:
             raise Exception("对中失败")
