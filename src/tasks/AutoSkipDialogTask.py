@@ -1,7 +1,7 @@
 import time
 
 from qfluentwidgets import FluentIcon
-
+from src.data.FeatureList import FeatureList as fL
 from ok import TriggerTask, Logger
 from src.tasks.BaseEfTask import BaseEfTask
 
@@ -17,7 +17,7 @@ class AutoSkipDialogTask(BaseEfTask, TriggerTask):
         self.icon = FluentIcon.ACCEPT
 
     def run(self):
-        if self.find_one('skip_dialog_esc', horizontal_variance=0.05):
+        if self.find_one(fL.skip_dialog_esc, horizontal_variance=0.05):
             self.send_key('esc', after_sleep=0.1)  # 确认使用send_key：esc为系统通用退出键，非游戏可配置热键
             start = time.time()
             clicked_confirm = False
@@ -28,5 +28,14 @@ class AutoSkipDialogTask(BaseEfTask, TriggerTask):
                     clicked_confirm = True
                 elif clicked_confirm:
                     self.log_debug('AutoSkipDialogTask no confirm break')
-                    break
+                    return
                 self.next_frame()
+        if self.find_one(fL.baker_icon, horizontal_variance=0.05, vertical_variance=0.05):
+            self.next_frame()
+            if result:= self.find_one(fL.baker_click, horizontal_variance=0.05, vertical_variance=0.05):
+                self.click(result, after_sleep=0.4)
+            if result:= self.ocr(match="结束会话", box=self.box_of_screen(1294/1920, 806/1080, 1412/1920, 860/1080)):
+                self.click(result, after_sleep=0.4)
+                return
+        
+            

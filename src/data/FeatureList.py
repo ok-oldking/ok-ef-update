@@ -9,6 +9,8 @@ class FeatureList(str, Enum):
     ardelia_contact = 'ardelia_contact'
     assist_friend = 'assist_friend'
     avywenna_contact = 'avywenna_contact'
+    baker_click = 'baker_click'
+    baker_icon = 'baker_icon'
     bluesteel_ore = 'bluesteel_ore'
     can_exchange_info_icon = 'can_exchange_info_icon'
     can_help_icon = 'can_help_icon'
