@@ -27,6 +27,7 @@ class DailyRoutineMixin(LiaisonMixin, Common):
             "⭐帝江号收菜": True,
             "收集线索": True,
             "制造舱": True,
+            "培养舱": True,
             "⭐周常奖励": True,
             "⭐日常奖励": True,
         })
@@ -68,6 +69,10 @@ class DailyRoutineMixin(LiaisonMixin, Common):
             "制造舱": (
                 "是否前往「帝江号/制造仓」收取培养材料。\n"
                 "收取后会补足待制造数量。"
+            ),
+            "培养舱": (
+                "是否前往「帝江号/培养仓」收取培养材料。\n"
+                "收取后会直接再次培养，自行保证有足够的培育材料。"
             ),
             "⭐周常奖励": (
                 "是否领取「活动中心/每周事物」中的奖励。"
@@ -734,6 +739,7 @@ class DailyRoutineMixin(LiaisonMixin, Common):
         exchange_help_box = self.box_of_screen(0.1, 561 / 861, 0.9, 0.9)
         ok_bool_clue=True
         ok_up_room=True
+        ok_culture_room=True
         if not self.collect_clue(exchange_help_box):
             self.log_info("收集线索任务失败")
             ok_bool_clue=False
@@ -741,9 +747,13 @@ class DailyRoutineMixin(LiaisonMixin, Common):
             self.log_info("无法返回到运转界面")
             return False
         if not self.up_make_room_num(exchange_help_box):
-            self.log_info("提升房间等级任务失败")
+            self.log_info("制造舱任务失败")
             ok_up_room=False
-        if ok_bool_clue and ok_up_room:
+        if not self.culture_room(exchange_help_box):
+            self.log_info("培养舱任务失败")
+            ok_culture_room=False
+        self.use_help()
+        if ok_bool_clue and ok_up_room and ok_culture_room:
             return True
         return False
 
@@ -828,6 +838,44 @@ class DailyRoutineMixin(LiaisonMixin, Common):
             if not self.safe_back(match=re.compile("运转"), box=self.box.top_left):
                 self.log_info("无法返回到运转界面")
                 return False
+        self.log_info("制造舱助力任务完成")
+        return True
+
+    def culture_room(self, exchange_help_box):
+        if not self.config.get("培养舱"):
+            self.logger.info("培养舱任务未启用，跳过")
+            return True
+        results = self.wait_ocr(match=re.compile("制造"), time_out=4, box=exchange_help_box)
+        if not results:
+            self.log_info("未找到培养舱，任务失败")
+            return False
+        self.scroll_relative(results[0].x / self.width, results[0].y / self.height, count=-8)
+        self.wait_ui_stable(refresh_interval=0.5)
+        results = self.wait_ocr(match=re.compile("培养"), time_out=4, box=exchange_help_box)
+        if not results:
+            self.log_info("未找到培养舱，任务失败")
+            return False
+        self.click(results[0])
+        self.log_info("点击培育室")
+        results = self.wait_click_ocr(match=[re.compile("收取"),re.compile("培养")], time_out=3, box=exchange_help_box, recheck_time=1)
+        if not results:
+            self.log_info("未找到全部收取或培养中字样，任务失败")
+            return False
+        if not ("收取" in results[0].name):
+            self.log_info("正在培养，任务结束")
+            return True
+        self.log_info("找到收取按钮")
+        self.wait_pop_up(after_sleep=1)
+        if not self.wait_click_ocr(match=re.compile("再次"), time_out=3, box=self.box.bottom, after_sleep=1):
+            self.log_info("未找到再次培养按钮，再次培养失败")
+            return False
+        self.click_confirm(time_out=3)
+        self.log_info("再次培养成功")
+        if not self.safe_back(match=re.compile("运转"), box=self.box.top_left):
+            self.log_info("无法返回到运转界面")
+            return False
+        return True
+    def use_help(self):
         self.wait_click_ocr(match=re.compile("助力"), time_out=2, box=self.box.top_right, after_sleep=1)
         self.wait_click_ocr(match=re.compile("使用"), time_out=2, box=self.box.bottom_right, after_sleep=1)
         char_list = list(get_contact_list_with_feature_list().values())
