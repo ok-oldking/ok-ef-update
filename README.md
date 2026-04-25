@@ -10,9 +10,9 @@
 <h1 align="center">ok-ef</h1>
 
 <p>
-一个基于图像识别的终末地自动化程序，部分功能支持后台运行，基于 <a href="https://github.com/ok-oldking/ok-script">ok-script</a> 开发。
+一个基于图像识别的终末地自动化程序，部分功能支持后台运行，基于 <a href="https://github.com/alicejump/ok-script">ok-script</a> 开发。
 <br />
-An image-recognition-based automation tool for End Field, with background mode support, developed with <a href="https://github.com/ok-oldking/ok-script">ok-script</a>.
+An image-recognition-based automation tool for End Field, with background mode support, developed with <a href="https://github.com/alicejump/ok-script">ok-script</a>.
 </p>
 
 <p><i>通过模拟 Windows 用户接口进行操作，无内存读取、无文件修改</i></p>
@@ -22,8 +22,8 @@ An image-recognition-based automation tool for End Field, with background mode s
 <div align="center">
 
 ![平台](https://img.shields.io/badge/platform-Windows-blue)
-[![GitHub release](https://img.shields.io/github/v/release/ok-oldking/ok-end-field)](https://github.com/ok-oldking/ok-end-field/releases)
-[![总下载量](https://img.shields.io/github/downloads/ok-oldking/ok-end-field/total)](https://github.com/ok-oldking/ok-end-field/releases)
+[![GitHub release](https://img.shields.io/github/v/release/alicejump/ok-end-field)](https://github.com/alicejump/ok-end-field/releases)
+[![总下载量](https://img.shields.io/github/downloads/alicejump/ok-end-field/total)](https://github.com/alicejump/ok-end-field/releases)
 [![Discord](https://img.shields.io/discord/296598043787132928?color=5865f2&label=%20Discord)](https://discord.gg/vVyCatEBgA)
 
 </div>
@@ -59,11 +59,11 @@ An image-recognition-based automation tool for End Field, with background mode s
 
 ## 📥 下载渠道
 
-* **[GitHub](https://github.com/ok-oldking/ok-end-field/releases)**: 官方发布页，全球访问速度快。（**请下载 `setup.exe`
+* **[GitHub](https://github.com/alicejump/ok-end-field/releases)**: 官方发布页，全球访问速度快。（**请下载 `setup.exe`
   安装包，而不是 `Source Code` 源码压缩包**）
 * **[Mirror酱](https://mirrorchyan.com/zh/projects?rid=ok-end-field&source=ok-ef-readme)**: 国内镜像，下载可能需要购买其平台的
   CD-KEY。
-* **[夸克网盘](https://pan.quark.cn/s/a1052cec4d13)**: 国内网盘，免费，但需要注册并使用其客户端下载。
+* **[夸克网盘](https://pan.quark.cn/s/db2517830901)**: 国内网盘，免费，但需要注册并使用其客户端下载。
 
 
 ## 运行要求与推荐设置
