@@ -62,7 +62,7 @@ class MapMixin(BaseEfTask):
             return False
 
         # 点击“清空选中”，避免地图筛选导致传送点不显示
-        if not self.wait_click_ocr(match="清空选中", box=self.box.bottom_left, time_out=10, log=True, after_sleep=2):
+        if not self.wait_click_ocr(match="清空选中", box=self.box.bottom_left, time_out=10, log=True, after_sleep=0.5):
             return False
         for _ in range(2):
             # 如果需要保留特定图标，则点击保留图标

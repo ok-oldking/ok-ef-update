@@ -336,16 +336,23 @@ class NavigationMixin(BaseEfTask):
 
             if time.time() - start_action_time < once_time:
                 self.sleep(once_time - (time.time() - start_action_time))  # OCR 成功后不需要处理，下一次失败仍然随机
-            if not scroll_bool and need_scroll:
-                scroll_bool = True
-                # cx = int(self.width * 0.5)
-                # cy = int(self.height * 0.5)
-                for _ in range(2):
-                    # self.scroll(cx, cy, 8)
-                    # 20 在实测中放大幅度偏小，提升到 80 以便更快拉近视角提高对中可见性
-                    pyautogui.scroll(int(self.resolution_scale()*400))
-                    self.sleep(1)
+            if need_scroll:
+                # 初始放大（只执行一次）
+                if not scroll_bool:
+                    scroll_bool = True
+                    self.do_scroll(8, 400)
+
+                # 时间节点控制
+                scroll_plan = {max_time * 1 // 4: -400, max_time * 2 // 4: -400, max_time * 3 // 4: -400}
+
+                if i in scroll_plan:
+                    self.do_scroll(2, scroll_plan[i])
         if raise_if_fail:
             raise Exception("对中失败")
         else:
             return False
+
+    def do_scroll(self, times, delta):
+        for _ in range(times):
+            pyautogui.scroll(int(self.resolution_scale() * delta))
+            self.sleep(0.1)
