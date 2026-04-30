@@ -99,7 +99,7 @@ class MapMixin(BaseEfTask):
         result = None
 
         # 最多尝试 8 次寻找传送点
-        for _ in range(8):
+        for _ in range(16):
 
             # 查找传送点图标
             result = self.find_feature(
@@ -116,7 +116,8 @@ class MapMixin(BaseEfTask):
             self.next_frame()
 
             # 向下滚动地图继续查找
-            self.scroll_relative(0.5, 0.5, -5)
+            self.scroll_relative(0.5, 0.5, -2)
+            self.sleep(0.5)
 
         # 如果最终仍然没有找到传送点
         if not result:

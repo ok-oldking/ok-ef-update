@@ -379,7 +379,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "源石研究园": self.box.top,
             "矿脉源区": self.box.right,
             "供能高地": self.box.bottom_right,
-            "武陵城": self.box.top,
+            "武陵城": self.box.top_left,
             "清波寨": self.box.top,
             "首墩": self.box.top,
         })
