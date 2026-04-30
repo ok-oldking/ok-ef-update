@@ -437,7 +437,7 @@ class DailyRoutineMixin(LiaisonMixin, Common):
 
             self.log_info(f"尝试第 {attempt}/{max_attempts} 次更换货品")
             if not change_button:
-                change_button=self.wait_click_ocr(match=re.compile("货品"),box=self.box.bottom_right, time_out=5)
+                change_button=self.wait_click_ocr(match=re.compile("货品"),box=self.box_of_screen(1700/1920, 610/1080, 1, 710/1080), time_out=5)
             else:
                 self.click(change_button)
             self.wait_ocr(
