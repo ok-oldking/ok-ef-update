@@ -8,7 +8,7 @@ class AccountMixin(LoginMixin):
         self.default_config.update({
             "多账户模式": False,
             "多账户独立配置": False,
-            "账号列表":"账号1,密码1\n账号2,密码2\n账号3,密码3",
+            "账号列表":"账号1\n账号2\n账号3",
         })
         self.config_description.update({
             "多账户模式": (
@@ -20,8 +20,9 @@ class AccountMixin(LoginMixin):
                 "开启后同一任务可按账号使用不同参数"
             ),
             "账号列表": (
-                "账号密码列表\n"
-                "每行一个账号，账号密码用逗号分隔"
+                "账号列表，每行一个账号（手机号）。\n"
+                "兼容旧格式：每行可写成 `账号,密码`，但密码字段会被忽略且不会被存储。\n"
+                "登录时也可使用手机号后四位进行匹配（若唯一）。"
             ),
         })
 
@@ -45,6 +46,7 @@ class AccountMixin(LoginMixin):
 
             username_part, password_part = line.split(",", 1)
             username = username_part.strip()
+            # 兼容旧格式但忽略密码
             password = password_part.strip()
 
             if not username:
@@ -56,7 +58,6 @@ class AccountMixin(LoginMixin):
                 {
                     "account_id": account_id,
                     "username": username,
-                    "password": password,
                 }
             )
 

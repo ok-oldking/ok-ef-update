@@ -1,5 +1,7 @@
 import re
 import time
+import os
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -13,15 +15,15 @@ from src.interaction.Mouse import run_at_window_pos
 class GameFlowMixin:
     """登录弹窗、主界面状态与场景导航流程能力。"""
 
-    def login_screenshot(self):
-        self.active_and_send_mouse_delta(0, 0, activate=True, only_activate=True)
+    def login_screenshot(self, need_active=True):
+        if need_active:
+            self.active_and_send_mouse_delta(0, 0, activate=True, only_activate=True)
         self.sleep(0.1)
         return capture_window_by_screen(self.hwnd.hwnd)
 
     def login_ocr(self, x=0, y=0, to_x=1, to_y=1, match=None, width=0, height=0, box=None, name=None, threshold=0,
-                  target_height=0, use_grayscale=False, log=False, frame_processor=None, lib='default'):
-        img = self.login_screenshot()
-
+                  target_height=0, use_grayscale=False, log=False, frame_processor=None, lib='default', need_active=True):
+        img = self.login_screenshot(need_active=need_active)
         if not isinstance(img, np.ndarray):
             img = np.array(img)
         return super().ocr(
@@ -47,8 +49,8 @@ class GameFlowMixin:
                            use_gray_scale=False, x=-1, y=-1, to_x=-1, to_y=-1, width=-1, height=-1, box=None,
                            canny_lower=0, canny_higher=0, frame_processor=None, template=None,
                            match_method=cv2.TM_CCOEFF_NORMED, screenshot=False, mask_function=None, frame=None,
-                           limit=0, target_height=0):
-        img = self.login_screenshot()
+                           limit=0, target_height=0, need_active=True):
+        img = self.login_screenshot(need_active=need_active)
         frame = img if isinstance(img, np.ndarray) else np.array(img)
         return super().find_feature(
             feature_name,

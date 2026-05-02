@@ -87,7 +87,8 @@ class AccountConfigTab(CustomTab):
         header_layout.setSpacing(6)
         tip = BodyLabel(
             "按账号和任务配置独立参数。先选账号，再选任务，下面会自动出现该任务的属性控件。"
-            "账号页只需要填写账号名（手机号），密码请在任务配置里的账号列表中填写。"
+            "账号页只需要填写账号名（手机号），无需填写密码。系统兼容旧格式 `账号,密码` 但不会保存密码。"
+            "登录时也可只使用手机号后四位进行匹配（若唯一）。"
         )
         tip.setWordWrap(True)
         header_layout.addWidget(tip)
@@ -349,7 +350,7 @@ class AccountConfigTab(CustomTab):
             f"新建ID {summary.get('created_count', 0)}）"
         )
         status += "；账号名（手机号）是唯一ID，密码变化不影响ID，账号名变化会新建ID"
-        status += "；账号页无需密码，密码请在任务配置账号列表中填写"
+        status += "；账号页无需填写密码，保存时会移除任何密码信息（仅保留用户名）"
 
         invalid_count = int(summary.get("invalid_count", 0) or 0)
         if invalid_count > 0:

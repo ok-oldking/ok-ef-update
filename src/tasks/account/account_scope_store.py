@@ -271,7 +271,9 @@ def _sync_account_list_text_on_data(data: Dict[str, Any], text: str) -> Tuple[Di
         if account_id not in keep_ids and not accounts.get(account_id):
             registry.pop(account_id, None)
 
-    normalized["account_list_text"] = _clean_text(text)
+    # 为了不在持久化存储中保留密码，保存时只写入用户名（每行一个）以替换原始文本
+    cleaned_lines = [entry.get("username", "") for entry in new_entries if entry.get("username", "")]
+    normalized["account_list_text"] = "\n".join(cleaned_lines)
 
     summary = {
         "total_valid": len(new_entries),
