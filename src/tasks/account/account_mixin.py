@@ -40,14 +40,11 @@ class AccountMixin(LoginMixin):
             if not line:
                 continue  # ✅ 跳过空行
 
-            if "," not in line:
-                self.log_info(f"账号格式错误，已跳过: {line}")
-                continue  # ✅ 跳过非法格式
-
-            username_part, password_part = line.split(",", 1)
-            username = username_part.strip()
-            # 兼容旧格式但忽略密码
-            password = password_part.strip()
+            if "," in line:
+                username_part, password_part = line.split(",", 1)
+                username = username_part.strip()
+            else:
+                username = line.strip()  # ✅ 兼容只有账号的情况
 
             if not username:
                 self.log_info(f"账号格式错误，已跳过: {line}")
