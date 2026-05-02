@@ -197,6 +197,12 @@ python -m unittest tests/TestEssenceRecognizer.py
 
 ## ❤️ 赞助与致谢
 
+### 贡献者
+
+<a href="https://github.com/AliceJump/ok-end-field/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=AliceJump/ok-end-field" />
+</a>
+
 ### 赞助商 (Sponsors)
 
 * **EXE 签名**: Free code signing provided by [SignPath.io](https://signpath.io/), certificate

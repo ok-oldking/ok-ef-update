@@ -107,4 +107,6 @@ class ZipLineMixin(NavigationMixin):
                 else:
                     self.move_keys(keys[i], 0.1)
         if self.wait_ocr(match=on_zip_line_stop, box="bottom", log=True, time_out=2):
-            self.click(key="right")
+            self.click(key="right", after_sleep=2)
+        self.log_info("滑索结束")
+        self.ensure_main()
