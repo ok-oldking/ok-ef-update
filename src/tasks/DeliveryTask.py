@@ -59,24 +59,21 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
         self.config_description.update({
             self.CFG_SCROLL_ENABLE: "启用后在对齐滑索时会自动滚动放大视角\n可能会提高对齐成功率，但也可能导致对齐成功率下降较为明显\n建议启用此项时不要使用非白发或有白帽角色",
             self.CFG_TEST_TARGET: "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
-            self.CFG_ONLY_ACCEPT: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n仅接取7.31w武陵委托，不送货',
+            self.CFG_ONLY_ACCEPT: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n仅接取武陵委托，不送货',
             self.CFG_ONLY_DELIVER: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n接取武陵委托后启动自动识别送货',
             self.CFG_TUTORIAL: self.TUTORIAL_TIPS,
             "发生异常时终止游戏": "勾选这个选项：如果「完成后退出」被选定，那么抛出异常也会退出游戏和App。",
         })
+        self.default_config_group.update({"滑索配置": [self.CFG_TO_DELIVERY_POINT] + self.ends})
         self.default_config.update(
             {
                 self.CFG_TARGET_TICKET_NUM: "119000",
-                self.CFG_TO_DELIVERY_POINT: "36,14",
-                "常沄": "14,108,64,109,60",
-                "资源": "14,108,64,109",
-                "彦宁": "14,108,64,108,59",
-                "齐纶": "14,108,106",
+                **{x: "" for x in [self.CFG_TO_DELIVERY_POINT] + self.ends},
                 self.CFG_SCROLL_ENABLE: False,
                 self.CFG_ONLY_ACCEPT: False,
                 self.CFG_ONLY_DELIVER: False,
                 self.CFG_TEST_TARGET: self.TEST_NONE,
-                "发生异常时终止游戏": False
+                "发生异常时终止游戏": False,
             }
         )
         self.config_type[self.CFG_TUTORIAL] = {
