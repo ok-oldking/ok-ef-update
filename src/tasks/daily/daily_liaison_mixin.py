@@ -1,5 +1,8 @@
 import re
 import time
+import webbrowser
+
+from qfluentwidgets import FluentIcon
 
 from src.data.characters_utils import get_contact_list_with_feature_list
 from src.tasks.mixin.common import LiaisonResult, build_name_patterns
@@ -15,8 +18,13 @@ class DailyLiaisonMixin(LiaisonMixin):
         self.contact_name_patterns = {name: build_name_patterns(name) for name in self.can_contact_dict.keys()}
         #
         self.config_type["优先送礼对象"] = {"type": "drop_down", "options": list(self.can_contact_dict.keys())}
+        self.config_type["帮助"] = {
+            "type": "button",
+            "text": "打开帮助",
+            "icon": FluentIcon.LINK,
+            "callback": self.open_help_link,
+        }
         self.default_config.update({
-            "帮助": self.HELP_LINK,
             "⭐送礼": True,
             "⭐帝江号一键存放": False,
             "送礼任务最多尝试次数": 2,
@@ -32,7 +40,14 @@ class DailyLiaisonMixin(LiaisonMixin):
                 "是否在「帝江号」打开背包并点击「一键存放」。\n"
                 "确认不会自动存可用道具导致治疗药被存入后再开启"
             ),
+            "帮助": "打开日常任务使用说明网页。",
         })
+        self.default_config_group.update({
+            "⭐送礼": ["送礼任务最多尝试次数", "优先送礼对象"],
+        })
+
+    def open_help_link(self, *_):
+        webbrowser.open(self.HELP_LINK)
 
     def execute_gift_to_liaison(self):
         """传送至帝江号后执行联络与送礼链路。"""

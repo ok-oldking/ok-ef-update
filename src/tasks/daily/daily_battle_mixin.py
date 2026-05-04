@@ -51,6 +51,30 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "启用排轴": False,
             "排轴序列": "ult_2,1,e,ult_3,sleep_8",
         })
+        self.default_config_group.update(
+            {
+                "⭐刷体力": [
+                    "消耗限时体力药",
+                    "体力本配置",
+                    # 如果要把 gather_list 里的 key 也折叠
+                    "战斗相关选项",
+                    "淤积点相关选项",
+                ],
+                "体力本配置": ["体力本", self.CFG_STAGE_REWARD_TIER, "刷体力开始日期", "刷本序列"],
+                "淤积点相关选项": ["仅站桩", "体力刷完后继续刷取次数", self.CFG_SCROLL_ENABLE]
+                + [key for key in gather_list],
+                "战斗相关选项": [
+                    "技能释放",
+                    "启动技能点数",
+                    "后台结束战斗通知",
+                    "无数字操作间隔",
+                    "进入战斗后的初始等待时间",
+                    "启用排轴",
+                    "排轴序列",
+                ],
+            }
+        )
+
         self.config_description.update({
             "⭐刷体力": (
                 "是否消耗所有「理智」刷取培养材料。"
@@ -669,6 +693,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                     self.ensure_main()
                 else:
                     raise Exception("未找到追踪按钮")
+            self.click(key="middle", after_sleep=2)
         else:
             end_feature_name = "battle_end"
             use_yolo = True
@@ -679,7 +704,6 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
                 self.click(key="middle", after_sleep=2)
                 self.move_keys("aw", duration=0.1)
                 self.sleep(1)
-        self.click(key="middle", after_sleep=2)
         start_time = time.time()
         try:
             while self.align_ocr_or_find_target_to_center(end_feature_name, ocr=False, use_yolo=use_yolo, box=search_box,

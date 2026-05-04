@@ -32,7 +32,6 @@ class DailyTask(
         self.support_schedule_task = True
         self.support_multi_account = True
         self.task_status = {"success": [], "failed": [], "skipped": [], "all": []}
-        self.default_config.update({"⭐传送到帝江号右侧传送点": True, "发生异常时终止游戏": False, "仅退出游戏": False})
         self.config_description.update(
             {
                 "仅退出游戏": "是否在完成所有任务后仅退出游戏，开启后会自动关闭游戏进程,但不关闭软件\n开启发生异常时终止游戏时此选项不生效",
@@ -48,6 +47,7 @@ class DailyTask(
                 "可选填写『结尾外部命令起始于』作为命令工作目录。"
             ),
         )
+        self.default_config.update({"⭐传送到帝江号右侧传送点": True, "发生异常时终止游戏": False, "仅退出游戏": False})
         self.current_task_key = None
         self.add_exit_after_config()
         if self.debug:
@@ -56,8 +56,6 @@ class DailyTask(
     def run(self):
         """日常任务主入口。"""
         try:
-            # 在运行期覆盖帮助链接，避免在 __init__ 阶段 self.config 仍为 None。
-            self.config["帮助"] = self.HELP_LINK
             self.log_info("开始执行日常任务...", notify=True)
             accounts_bool = self.config.get("多账户模式", False)
             if accounts_bool:

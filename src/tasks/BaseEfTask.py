@@ -36,7 +36,7 @@ class BaseEfTask(
         self.current_user = ""  # 记录当前用户
         self.current_account_id = ""  # 记录当前账号稳定ID（优先用于账号覆盖）
         self.support_multi_account = False  # 明确标识该任务是否支持多账号执行逻辑
-
+        self.default_config_group = {}  # 配置项分组信息，格式为 { "分组名称": ["配置项1", "配置项2"] }
         self.box = ScreenPosition(self)  # 屏幕位置辅助对象，提供top/bottom/left/right等边界
         self.key_config = self.get_global_config("Game Hotkey Config")  # 获取全局热键配置
         self.once_sleep_time = self.get_global_config("Ensure Main Once Action Sleep").get(

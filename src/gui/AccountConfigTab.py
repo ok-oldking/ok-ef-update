@@ -487,7 +487,7 @@ class AccountConfigTab(CustomTab):
                 continue
 
             type_meta = task.config_type.get(key) if task.config_type else None
-            if type_meta and type_meta.get("type") == "global":
+            if type_meta and type_meta.get("type") in {"global", "button"}:
                 continue
 
             if not self._is_supported_value(default_value):

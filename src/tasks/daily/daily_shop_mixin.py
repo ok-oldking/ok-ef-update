@@ -23,6 +23,9 @@ class DailyShopMixin(Common):
         self.refresh_count = 0
         self.refresh_cost_list = [80, 120, 160, 201]
         self.credit_good_search_box = None
+        self.default_config_group.update({
+            "⭐买信用商店": ["信用商店保留信用"],
+        })
 
     def refresh(self, sum_credit):
         if self.refresh_count >= len(self.refresh_cost_list):

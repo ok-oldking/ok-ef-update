@@ -33,6 +33,9 @@ class EndCommandMixin:
                 "结尾外部命令已运行时跳过": "开启后若检测到目标命令已在运行，将跳过本次启动。",
             }
         )
+        self.default_config_group.update({
+            "⭐执行结尾外部命令": ["结尾外部命令", "结尾外部命令起始于", "结尾外部命令等待退出", "结尾外部命令已运行时跳过"],
+        })
 
     def launch_end_command_non_blocking(self):
         command = str(self.config.get("结尾外部命令", "")).strip()

@@ -25,6 +25,9 @@ class AccountMixin(LoginMixin):
                 "登录时也可使用手机号后四位进行匹配（若唯一）。"
             ),
         })
+        self.default_config_group.update({
+            "多账户模式":["多账户独立配置", "账号列表"],
+        })
 
     def get_account_list(self):
         account_str = self.config.get("账号列表", "")

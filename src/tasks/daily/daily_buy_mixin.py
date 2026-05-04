@@ -26,7 +26,9 @@ class DailyBuyMixin(Common):
                 "是否购买「人文物产」。"
             ),
         })
-
+        self.default_config_group.update({
+            "⭐买物资": ["购物白名单", "是否买礼物"], 
+        })
 
     def buy_staple_goods(self):
         self.info_set("current_task", "buy_staple_goods")
@@ -52,7 +54,6 @@ class DailyBuyMixin(Common):
                 self.log_info("购买「人文物产」")
                 self.buy()
 
-
     def buy(self, pattern_list=[]):
         if len(pattern_list) <= 0:
             self.click_relative(0.1, 0.4, after_sleep=2)
@@ -64,10 +65,10 @@ class DailyBuyMixin(Common):
                 return
             self.click(box_list[0], after_sleep=2)
             self.log_info(f"已选定货品：{box_list[0].name}")
-        if not self.plus_max():
-            self.send_key("esc", after_sleep=2)  # 确认使用send_key：esc为系统通用退出键，非游戏可配置热键
+        self.plus_max()
+        if self.wait_click_ocr(match=re.compile("确认购买"), box=self.box.bottom_right, time_out=2):
+            self.wait_pop_up(after_sleep=2)
+        else:
+            self.back(after_sleep=2)
             self.log_info("调度券不足，跳过")
-            return
-        self.click_relative(0.8, 0.8, after_sleep=2)
-        self.wait_pop_up(after_sleep=2)
         self.log_info("已购买")

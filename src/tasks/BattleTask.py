@@ -9,6 +9,7 @@ class BattleTask(DailyBattleMixin):
         self.name = "刷体力"
         self.description = "使用说明参见选项，更多用法参见 ./docs/体力本.md"
         self.icon = FluentIcon.BRIGHTNESS
+        self.default_config_group.pop("⭐刷体力", None)
         self.default_config.pop("⭐刷体力", None)
 
     def run(self):

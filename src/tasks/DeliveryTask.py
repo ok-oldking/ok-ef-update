@@ -1,10 +1,12 @@
 import re
 import time
+import webbrowser
 from datetime import datetime
 from dataclasses import dataclass
 from typing import List, Tuple
 
 from ok import Box, TaskDisabledException
+from qfluentwidgets import FluentIcon
 
 from src.data.FeatureList import FeatureList as fL
 from src.tasks.account.account_mixin import AccountMixin
@@ -59,12 +61,11 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
             self.CFG_TEST_TARGET: "默认是无，表示正常执行相关任务\n也可以选择特定的滑索分叉序列来测试滑索功能\n选择完整循环测试则会依次测试每个送货目标的完整流程\n(需要锁定次要任务在送货任务上或附近)",
             self.CFG_ONLY_ACCEPT: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n仅接取7.31w武陵委托，不送货',
             self.CFG_ONLY_DELIVER: f'前置是选择测试对象部分选择"{self.TEST_NONE}"\n接取武陵委托后启动自动识别送货',
+            self.CFG_TUTORIAL: self.TUTORIAL_TIPS,
             "发生异常时终止游戏": "勾选这个选项：如果「完成后退出」被选定，那么抛出异常也会退出游戏和App。",
         })
-        tutorial_value = f"{self.TUTORIAL_LINK}\n{self.TUTORIAL_TIPS}"
         self.default_config.update(
             {
-                self.CFG_TUTORIAL: tutorial_value,
                 self.CFG_TARGET_TICKET_NUM: "119000",
                 self.CFG_TO_DELIVERY_POINT: "36,14",
                 "常沄": "14,108,64,109,60",
@@ -78,6 +79,12 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
                 "发生异常时终止游戏": False
             }
         )
+        self.config_type[self.CFG_TUTORIAL] = {
+            "type": "button",
+            "text": "打开教程",
+            "icon": FluentIcon.LINK,
+            "callback": self.open_tutorial_link,
+        }
         self.config_type[self.CFG_TEST_TARGET] = {
             "type": "drop_down",
             "options": [self.TEST_NONE, self.CFG_TO_DELIVERY_POINT] + self.ends + [self.TEST_FULL_CYCLE],
@@ -91,6 +98,9 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
         self._last_refresh_ts = 0
         self.try_time = 0
         self.add_exit_after_config()
+
+    def open_tutorial_link(self, *_):
+        webbrowser.open(self.TUTORIAL_LINK)
 
     def merge_left_right_groups(self) -> List[DeliveryRow]:
         """合并OCR左右区域结果，按规则分组为行对象
@@ -592,8 +602,6 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
     def run(self):
         """运输委托任务的主入口，支持与日常任务一致的多账号执行逻辑。"""
         try:
-            # 在运行期覆盖教程链接，避免在 __init__ 阶段 self.config 仍为 None。
-            self.config[self.CFG_TUTORIAL] = f"{self.TUTORIAL_LINK}\n{self.TUTORIAL_TIPS}"
             accounts_bool = self.config.get("多账户模式", False)
             if accounts_bool:
                 accounts_list = self.get_account_list()
