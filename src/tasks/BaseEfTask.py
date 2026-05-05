@@ -1,7 +1,8 @@
 import threading
+from datetime import datetime
 
 import win32gui
-from ok import BaseTask
+from ok import BaseTask, TaskDisabledException
 
 from src.interaction.KeyConfig import KeyConfigManager
 from src.interaction.ScreenPosition import ScreenPosition
@@ -75,3 +76,69 @@ class BaseEfTask(
         self.current_user = username
         self.current_account_id = account_id
         self._bind_account_aware_config_get()
+
+    def iter_multi_account_context(self, repeat_times: int = 1, empty_accounts_message: str | None = None,
+                                   account_log_suffix: str = "", allow_multi_account: bool = True):
+        """统一多账号执行上下文。
+
+        当开启多账户模式时，会先读取账号列表；列表为空则直接结束当前任务。
+        每次迭代前会自动设置当前账号、记录启动日志并执行登录流程。
+
+        Args:
+            repeat_times: 非多账户模式下的执行轮数。
+            empty_accounts_message: 账号列表为空时的提示文案。
+            account_log_suffix: 账号启动日志的后缀文本。
+
+        Yields:
+            tuple[int, int]: 当前轮次索引和总轮数。
+        """
+        accounts_bool = self.config.get("多账户模式", False) and allow_multi_account
+        if accounts_bool:
+            accounts_list = self.get_account_list()
+            if not accounts_list:
+                if empty_accounts_message:
+                    self.log_info(empty_accounts_message, notify=True)
+                return
+            repeat_times = len(accounts_list)
+        else:
+            accounts_list = []
+
+        for repeat_idx in range(repeat_times):
+            if accounts_bool:
+                account = accounts_list[repeat_idx]
+                username = str(account.get("username", "")).strip()
+                password = str(account.get("password", ""))
+                account_id = str(account.get("account_id", "")).strip() or username
+                if not username:
+                    self.log_info(f"第 {repeat_idx + 1}/{repeat_times} 个账号为空，已跳过")
+                    continue
+
+                self.set_current_account(username, account_id)
+                self.log_info(f"开始第 {repeat_idx + 1}/{repeat_times} 个账号({username[-4:]}){account_log_suffix}")
+                self.login_flow(username, password)
+            else:
+                self.set_current_account("", "")
+
+            yield repeat_idx, repeat_times
+
+    def handle_task_exception(self, e: Exception, prefix: str):
+        """统一处理任务 run() 中的异常逻辑。
+
+        - 截图（前缀基于日期 + prefix）
+        - 根据配置 `发生异常时终止游戏` 决定是继续（记录日志）还是终止（记录并不抛出）
+        - 对于 `TaskDisabledException` 总是重新抛出以便上层处理
+        """
+        try:
+            self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_{prefix}')
+        except Exception:
+            pass
+
+        if not self.config.get("发生异常时终止游戏", False):
+            self.log_info("发生异常，继续游戏", notify=True)
+            raise e
+        else:
+            if isinstance(e, TaskDisabledException):
+                self.log_info("发生异常，继续游戏", notify=True)
+                raise e
+            else:
+                self.log_info("发生异常，终止游戏", notify=True)

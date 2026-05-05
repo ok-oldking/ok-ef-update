@@ -599,43 +599,14 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
     def run(self):
         """运输委托任务的主入口，支持与日常任务一致的多账号执行逻辑。"""
         try:
-            accounts_bool = self.config.get("多账户模式", False)
-            if accounts_bool:
-                accounts_list = self.get_account_list()
-                repeat_times = len(accounts_list)
-                if repeat_times == 0:
-                    self.log_info("多账户模式已开启，但账号列表为空，自动送货任务结束", notify=True)
-                    return
-            else:
-                accounts_list = []
-                repeat_times = 1
-
-            for repeat_idx in range(repeat_times):
-                if accounts_bool:
-                    account = accounts_list[repeat_idx]
-                    username = str(account.get("username", "")).strip()
-                    password = str(account.get("password", ""))
-                    account_id = str(account.get("account_id", "")).strip() or username
-                    if not username:
-                        self.log_info(f"第 {repeat_idx + 1}/{repeat_times} 个账号为空，已跳过")
-                        continue
-
-                    self.set_current_account(username, account_id)
-                    self.log_info(f"开始第 {repeat_idx + 1}/{repeat_times} 个账号({username[-4:]})自动送货")
-                    self.login_flow(username, password)
-                else:
-                    self.set_current_account("", "")
-
+            allow_multi = self.config.get(self.CFG_TEST_TARGET) == self.TEST_NONE
+            for repeat_idx, repeat_times in self.iter_multi_account_context(
+                repeat_times=1,
+                empty_accounts_message="多账户模式已开启，但账号列表为空，自动送货任务结束",
+                account_log_suffix="自动送货",
+                allow_multi_account=allow_multi,
+            ):
                 self._run_single_delivery_cycle()
 
         except Exception as e:
-            self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DeliveryTask_Exception')
-            if not self.config.get("发生异常时终止游戏", False):
-                self.log_info("发生异常，继续游戏", notify=True)
-                raise e
-            else:
-                if isinstance(e, TaskDisabledException):
-                    self.log_info("发生异常，继续游戏", notify=True)
-                    raise e
-                else:
-                    self.log_info("发生异常，终止游戏", notify=True)
+            self.handle_task_exception(e, 'DeliveryTask_Exception')

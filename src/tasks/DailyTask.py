@@ -1,6 +1,3 @@
-from datetime import datetime
-
-from ok import TaskDisabledException
 from qfluentwidgets import FluentIcon
 
 from src.tasks.account.account_mixin import AccountMixin
@@ -10,6 +7,7 @@ from src.tasks.daily.daily_liaison_mixin import DailyLiaisonMixin
 from src.tasks.daily.daily_routine_mixin import DailyRoutineMixin
 from src.tasks.daily.daily_shop_mixin import DailyShopMixin
 from src.tasks.daily.daily_trade_mixin import DailyTradeMixin
+from src.tasks.daily.daily_task_runner import DailyTaskRunner
 from src.tasks.mixin.end_command_mixin import EndCommandMixin
 
 class DailyTask(
@@ -31,7 +29,6 @@ class DailyTask(
         self.icon = FluentIcon.SYNC
         self.support_schedule_task = True
         self.support_multi_account = True
-        self.task_status = {"success": [], "failed": [], "skipped": [], "all": []}
         self.config_description.update(
             {
                 "仅退出游戏": "是否在完成所有任务后仅退出游戏，开启后会自动关闭游戏进程,但不关闭软件\n开启发生异常时终止游戏时此选项不生效",
@@ -48,148 +45,33 @@ class DailyTask(
             ),
         )
         self.default_config.update({"⭐传送到帝江号右侧传送点": True, "发生异常时终止游戏": False, "仅退出游戏": False})
-        self.current_task_key = None
         self.add_exit_after_config()
         if self.debug:
             self.default_config.update({"重复测试的次数": 1})
 
+    def build_task_plan(self):
+        return [
+            ("⭐送礼", self.execute_gift_task),
+            ("⭐帝江号一键存放", self.boat_one_key_store),
+            ("⭐收邮件", self.claim_mail),
+            ("⭐据点兑换", self.exchange_outpost_goods),
+            ("⭐转交运送委托", self.delivery_send_others),
+            ("⭐转交委托奖励领取", self.claim_delivery_rewards),
+            ("⭐造装备", self.make_weapon),
+            ("⭐简易制作", self.make_simply),
+            ("⭐收信用", self.collect_credit),
+            ("⭐帝江号收菜", self.boat_claim_rewards),
+            ("⭐买信用商店", self.credit_shop),
+            ("⭐买卖货", self.buy_sell),
+            ("⭐刷体力", self.battle),
+            ("⭐买物资", self.buy_staple_goods),
+            ("⭐周常奖励", self.claim_weekly_rewards),
+            ("⭐日常奖励", self.claim_daily_rewards),
+            ("⭐传送到帝江号右侧传送点", lambda: self.transfer_to_home_point(box=self.box.right)),
+            ("⭐执行结尾外部命令", self.launch_end_command_non_blocking),
+        ]
+
     def run(self):
         """日常任务主入口。"""
-        try:
-            self.log_info("开始执行日常任务...", notify=True)
-            accounts_bool = self.config.get("多账户模式", False)
-            if accounts_bool:
-                accounts_list = self.get_account_list()
-                repeat_times = len(accounts_list)
-            else:
-                repeat_times = self.config.get("重复测试的次数", 1) if self.debug else 1
-            tasks = [
-                ("⭐送礼", self.execute_gift_task),
-                ("⭐帝江号一键存放", self.boat_one_key_store),
-                ("⭐收邮件", self.claim_mail),
-                ("⭐据点兑换", self.exchange_outpost_goods),
-                ("⭐转交运送委托", self.delivery_send_others),
-                ("⭐转交委托奖励领取", self.claim_delivery_rewards),
-                ("⭐造装备", self.make_weapon),
-                ("⭐简易制作", self.make_simply),
-                ("⭐收信用", self.collect_credit),
-                ("⭐帝江号收菜", self.boat_claim_rewards),
-                ("⭐买信用商店", self.credit_shop),
-                ("⭐买卖货", self.buy_sell),
-                ("⭐刷体力", self.battle),
-                ("⭐买物资", self.buy_staple_goods),
-                ("⭐周常奖励", self.claim_weekly_rewards),
-                ("⭐日常奖励", self.claim_daily_rewards),
-                ("⭐传送到帝江号右侧传送点", lambda: self.transfer_to_home_point(box=self.box.right)),
-                ("⭐执行结尾外部命令", self.launch_end_command_non_blocking),
-            ]
-            self.task_status["all"] = [task[0] for task in tasks]
-            all_fail_tasks = []
-            for repeat_idx in range(repeat_times):
-
-                # ===== 多账号模式 =====
-                if accounts_bool:
-                    account = accounts_list[repeat_idx]
-                    username = str(account.get("username", "")).strip()
-                    password = str(account.get("password", ""))
-                    account_id = str(account.get("account_id", "")).strip() or username
-                    if not username:
-                        self.log_info(f"第 {repeat_idx + 1}/{repeat_times} 个账号为空，已跳过")
-                        continue
-
-                    self.set_current_account(username, account_id)
-                    self.log_info(f"开始第 {repeat_idx+1}/{repeat_times} 个账号({username[-4:]})任务执行")
-                    self.login_flow(username, password)
-
-                # ===== 调试模式 =====
-                elif self.debug:
-                    self.set_current_account("", "")
-                    self.log_info(f"调试模式，第 {repeat_idx + 1}/{repeat_times} 轮")
-                else:
-                    self.set_current_account("", "")
-
-                if not self._logged_in:
-                    self.ensure_main(time_out=600)
-                else:
-                    self.ensure_main()
-                # ✅ 每轮重置状态
-                self.task_status = {"success": [], "failed": [], "skipped": [], "all": []}
-                self.task_status["all"] = [task[0] for task in tasks]
-
-                self.log_info(f"开始第 {repeat_idx + 1}/{repeat_times} 轮任务执行")
-
-                for key, func in tasks:
-                    self.execute_task(key, func)
-
-                # ✅ 统计结果
-                if self.task_status["failed"]:
-                    all_fail_tasks.append((repeat_idx + 1, self.task_status["failed"]))
-                    self.log_info(f"第 {repeat_idx + 1} 轮 | 失败任务: {self.task_status['failed']}", notify=True)
-                else:
-                    self.log_info(f"第 {repeat_idx + 1} 轮 | 日常完成!", notify=True)
-                if hasattr(self, "task_status"):
-                    if self.task_status.get("failed"):
-                        self.info_set("已失败的任务列表", self.task_status["failed"])
-                    if self.task_status.get("success"):
-                        self.info_set("已完成的任务列表", self.task_status["success"])
-                    if self.task_status.get("skipped"):
-                        self.info_set("已跳过的任务列表", self.task_status["skipped"])
-                    if self.task_status.get("all"):
-                        self.info_set("未处理的任务列表", self.task_status["all"])
-
-            # ✅ 汇总输出
-            if repeat_times > 1:
-                if all_fail_tasks:
-                    self.log_info(f"执行完成，失败统计: {all_fail_tasks}", notify=True)
-                else:
-                    self.log_info("所有任务均成功完成!", notify=True)
-
-            if self.config.get("仅退出游戏", False):
-                self.kill_game()
-                raise Exception("任务完成，仅退出游戏, 终止其他过程")
-        except Exception as e:
-            self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyTask_Exception')
-
-            if hasattr(self, "task_status"):
-                if self.task_status.get("failed"):
-                    self.info_set("已失败的任务列表", self.task_status["failed"])
-                if self.task_status.get("success"):
-                    self.info_set("已完成的任务列表", self.task_status["success"])
-                if self.task_status.get("skipped"):
-                    self.info_set("已跳过的任务列表", self.task_status["skipped"])
-                if self.task_status.get("all"):
-                    self.info_set("未处理的任务列表", self.task_status["all"])
-
-            if self.current_task_key:
-                self.info_set("当前失败的任务", self.current_task_key)
-
-            if not self.config.get("发生异常时终止游戏", False):
-                self.log_info("发生异常，继续游戏", notify=True)
-                raise e
-            else:
-                if isinstance(e, TaskDisabledException):
-                    self.log_info("发生异常，继续游戏", notify=True)
-                    raise e
-                else:
-                    self.log_info("发生异常，终止游戏", notify=True)
-
-    def execute_task(self, key, func):
-        """统一执行单个子任务。"""
-        self.task_status["all"].remove(key)
-        if isinstance(key, str):
-            if not self.config.get(key, False):
-                self.task_status["skipped"].append(key)
-                return True
-        self.current_task_key = key
-        self.log_info(f"开始任务: {key}")
-        self.ensure_main()
-        result = func()
-
-        if result is False:
-            self.task_status["failed"].append(key)
-            self.screenshot(f'{datetime.now().strftime("%Y%m%d")}_DailyTask_FailTask_{key}')
-            self.log_info(f"任务 {key} 执行失败", notify=True)
-            return False
-        self.task_status["success"].append(key)
-        self.current_task_key = None
-        return True
+        repeat_times = self.config.get("重复测试的次数", 1) if self.debug else 1
+        DailyTaskRunner(self, self.build_task_plan()).run(repeat_times=repeat_times)

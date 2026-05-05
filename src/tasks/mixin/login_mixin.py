@@ -69,7 +69,7 @@ class LoginMixin(BaseEfTask):
             self.log_error("未找到‘最近’按钮，可能未成功返回登录界面")
             raise RuntimeError("未找到‘最近’按钮，可能未成功返回登录界面")
         self.click_text(re.compile(username[-4:]), box=self.box_of_screen(0, (result[0].y+result[0].height)/self.height, 1, 1))  # 点击最近登录的账号（假设是唯一的）
-        self.click_text(re.compile("登录"))
+        self.click_text("登录")
         if not self._confirm_logged_in():
             raise RuntimeError("登录失败")
     def _confirm_logged_in(self, time_out: int = 120) -> bool:

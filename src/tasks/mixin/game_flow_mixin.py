@@ -137,7 +137,7 @@ class GameFlowMixin:
                 feature_name="reward_ok", box=self.box.bottom, threshold=0.8
             )
             if not result:
-                result = self.wait_ocr(match=re.compile("空白"), time_out=1, box=self.box.bottom)
+                result = self.wait_ocr(match=re.compile("点击空白处继续"), time_out=1, box=self.box.bottom)
             if result:
                 self.click(result, after_sleep=after_sleep)
                 return True
@@ -229,9 +229,7 @@ class GameFlowMixin:
             return True
         if self.click_confirm(time_out=1):
             return False
-        rules = [
-            [None, None, [re.compile("空白"), re.compile("结束拜访")], self.box.bottom]
-        ]
+        rules = [[None, None, [re.compile("点击空白处继续"), re.compile("结束拜访")], self.box.bottom]]
         if not self.run_ocr_rules(rules):
             return False
         if esc:
