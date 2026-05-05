@@ -69,7 +69,7 @@ An image-recognition-based automation tool for End Field, with background mode s
 ## 运行要求与推荐设置
 
 - 系统：Windows
-- 游戏分辨率：推荐 16:9（1920×1080 最佳，较低的分辨率可能导致更多的问题），最低 1280×720
+- 游戏分辨率：推荐 16:9（1920×1080 最佳），最低 1600×900（低于该分辨率可能导致识别与定位异常）
 - 语言：当前部分功能仅支持简体中文
 - 运行权限：建议管理员权限运行（源码模式必须）
 - 路径：安装/运行路径尽量使用纯英文
@@ -138,6 +138,9 @@ An image-recognition-based automation tool for End Field, with background mode s
 本项目仅支持 Python 3.12 版本, 必须以管理员权限启动CMD, PyCharm, VSCode。
 
 ```bash
+# 若首次 clone 未带子模块参数，请先执行
+git submodule update --init --recursive
+
 # 安装或更新依赖
 pip install -r requirements.txt --upgrade
 

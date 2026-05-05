@@ -122,6 +122,9 @@ ok-end-field/
 │   │   ├── Mouse.py           # 鼠标辅助函数（active_and_send_mouse_delta、run_at_window_pos 等）
 │   │   └── ScreenPosition.py  # ScreenPosition：按屏幕比例生成 Box（top/bottom/left/right 等）
 │   │
+│   ├── gui/
+│   │   └── AccountConfigTab.py # 账号配置页：多账号列表编辑、账号作用域覆盖配置入口
+│   │
 │   └── tasks/                 # 任务层（业务逻辑核心）
 │       ├── BaseEfTask.py      # 所有任务的公共基类：封装特征查找、传送、导航、战斗状态判断等
 │       ├── AutoCombatLogic.py # 自动战斗核心算法（独立于 Task，可被多个任务复用）
@@ -134,6 +137,7 @@ ok-end-field/
 │       ├── DeliveryTask.py    # 一次性任务：自动送货（武陵，含滑索路径）
 │       ├── EssenceScanTask.py # 一次性任务：基质扫描、自动上锁/弃置
 │       ├── PeriodicScreenshotTask.py # 一次性任务：定时截图（用于样本采集）
+│       ├── sequence_parser.py  # 排轴字符串解析器：将 "ult_2,1,e,sleep_8" 转为可执行动作序列
 │       ├── TakeDeliveryTask.py# 一次性任务：自动接取高价值运送委托（OCR+模板匹配）
 │       ├── Test.py            # 开发调试用任务（随时可改，不上生产）
 │       ├── TestStartGame.py   # 测试启动游戏流程（调试用）
@@ -150,6 +154,7 @@ ok-end-field/
 │       │   ├── daily_liaison_mixin.py # 送礼（干员联络台完整流程）
 │       │   ├── daily_routine_mixin.py # 其它日常（邮件/委托/装备/收信用/线索/制造舱等）
 │       │   ├── daily_shop_mixin.py    # 买信用商店（信用交易所、自动刷新）
+│       │   ├── daily_task_runner.py   # 日常任务执行器：串联子任务计划、处理异常与重复执行
 │       │   └── daily_trade_mixin.py   # 买卖货（弹性需求物资、价格判断）
 │       │
 │       └── mixin/             # 通用能力 Mixin（跨任务复用）
@@ -197,6 +202,14 @@ ok-end-field/
 ├── target_doc/                # 待补充文档（需开发者填写）
 │   └── 自动大世界收菜.md
 │
+├── configs/                   # 任务/全局配置（JSON）：各任务默认选项、设备配置、UI 配置、账号覆盖
+│
+├── ok_tasks/                  # 用户自定义任务
+│
+├── logs/                      # 运行日志（ok-script.log.*）与线程转储
+│
+├── screenshots/               # 运行时截图目录（调试/故障排查，重启后可能被清理）
+│
 ├── i18n/                      # 国际化翻译文件（zh_CN/zh_TW/en_US/ja_JP/ko_KR/es_ES）
 │
 ├── icons/                     # 程序图标
@@ -208,6 +221,7 @@ ok-end-field/
 │   ├── TestEssenceGoldGrid.py     # 基质金色格子识别测试
 │   ├── TestEssenceImageFeatures.py# 基质图像特征测试
 │   ├── TestEssenceRecognizer.py   # 基质 OCR 解析逻辑测试
+│   ├── TestSequenceParser.py      # 排轴序列解析测试（覆盖技能/等待等动作解析）
 │   ├── TestTakeDeliveryFunctions.py # 运送委托接取逻辑测试
 │   ├── TestWarehouseSwitchOCR.py  # 仓库切换 OCR 测试
 │   └── images/                    # 测试用截图样本
@@ -236,8 +250,11 @@ ok-end-field/
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/AliceJump/ok-end-field.git
+git clone --recurse-submodules https://github.com/AliceJump/ok-end-field.git
 cd ok-end-field
+
+# 若首次 clone 未带子模块参数，可补执行
+git submodule update --init --recursive
 
 # 2. 安装依赖
 pip install -r requirements.txt --upgrade
@@ -251,7 +268,7 @@ python main_debug.py
 ### IDE 推荐配置
 
 - PyCharm / VSCode 以**管理员身份**运行
-- 解释器选择系统 Python 3.12，不要用虚拟环境隔离 Win32 依赖
+- 解释器使用 Python 3.12（可使用系统解释器或项目虚拟环境，如 `.venv`）
 - 将 `ok-end-field/` 设为项目根目录，保证相对路径（`assets/`、`configs/` 等）正确解析
 
 ---
@@ -307,10 +324,10 @@ python main_debug.py
 
 1. 以 `main_debug.py` 模式启动程序，框架会根据 `ok_templates/` 子模块下的文件数据自动生成标签列表。
 2. 点击 GUI 左侧的**模板 tab**，即可查看所有已加载的截图及其对应的标签 label（详细机制见 ok-script 库文档）。
-3. 在 `ok_templates/` 中添加或更新标注文件后，重启程序即可在模板 tab 中看到新特征。
+3. 在 `ok_templates/` 中添加或更新标注文件后并保存到assets，重启程序即可使用新特征模板。
 4. 在代码中通过 `self.find_feature(fL.my_new_feature)` 调用新特征。
 
-> 分辨率适配：若需要支持 2K/4K，按命名约定 `feature_name_2k`、`feature_name_4k` 提供对应尺寸的图片，`BaseEfTask.get_feature_by_resolution()` 会自动按分辨率选择。
+> 分辨率适配：本项目默认1080P，若需要精确支持 2K/4K，按命名约定 `feature_name_2k`、`feature_name_4k` 提供对应尺寸的图片，`BaseEfTask.get_feature_by_resolution()` 会自动按分辨率选择。
 
 ### 5.5 添加新的 OCR 识别逻辑
 

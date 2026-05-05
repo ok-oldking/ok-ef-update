@@ -12,7 +12,7 @@ pyappify==1.0.2
 certifi==2025.7.14
     # via requests
 charset-normalizer==3.4.2
-    # via requests
+    # via requests65
 comtypes==1.4.11
     # via pycaw
 darkdetect==0.8.0

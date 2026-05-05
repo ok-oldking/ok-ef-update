@@ -24,6 +24,12 @@ cd ok-end-field
 
 > 项目包含子模块，务必加上 `--recurse-submodules`。
 
+若你已 clone 但忘记带 `--recurse-submodules`，可补执行：
+
+```bash
+git submodule update --init --recursive
+```
+
 ### 1.3 安装依赖
 
 ```bash
@@ -93,9 +99,10 @@ config = {
 
 ## 3. 新建一次性任务（可选）
 
-一次性任务（`BaseTask` 子类）由用户点击触发，执行完毕后自动停止。流程与触发式任务相同，区别在于：
+一次性任务由用户点击触发，执行完毕后自动停止。流程与触发式任务相同，区别在于：
 
-- 继承 `BaseTask`（而非 `TriggerTask`）
+- 推荐继承 `BaseEfTask`（如需最小实现，也可直接继承 `BaseTask`）
+- 不继承 `TriggerTask`
 - 注册到 `config["onetime_tasks"]` 列表
 
 ---
