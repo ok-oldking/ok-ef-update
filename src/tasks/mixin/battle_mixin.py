@@ -50,10 +50,14 @@ class BattleMixin(BaseEfTask):
 
         self.last_no_number_action_time = 0
         self.exit_check_count = 0
+        self.config_type["技能释放"] = {
+            "type": "multi_selection",
+            "options": ["1", "2", "3", "4"],
+        }
         self.config_description.update({
             "技能释放": (
-                "「战技」释放角色顺序，比如123。\n"
-                "建议只放3个技能。"
+                "勾选要自动循环释放「战技」的角色编号。\n"
+                "按编号从小到大的顺序依次释放，至少勾选一个。"
             ),
             "启动技能点数": (
                 "当「技力条」达到该数值时，\n"
@@ -69,10 +73,12 @@ class BattleMixin(BaseEfTask):
                 "当排轴失败时回退到非排轴状态"
             ),
             "排轴序列": (
-                "仅接受'1,2,3,4,ult_1,ult_2,ult_3,ult_4,e,sleep_[n]'这些值的逗号分隔字符串，\n"
+                "仅接受'1,2,3,4,ult_1,ult_2,ult_3,ult_4,e,sleep_[n],normal_[n]'这些值的逗号分隔字符串，\n"
                 "代表技能释放优先级顺序\n"
                 "例如'ult_2,1,e,ult_1'表示优先尝试干员2的终结技，再干员1的战技，\n"
                 "再尝试连携，再干员1的终极技\n"
+                "normal_[n] 表示临时切换为普通战斗模式 n 秒，期间按「技能释放」顺序自动出技，\n"
+                "n 秒结束后自动恢复排轴模式（从下一个排轴技能继续）\n"
                 "启用排轴功能后，系统会按照该配置的顺序尝试释放技能，\n"
                 "一旦成功释放一个技能，就会等待下一个技能，而不是继续尝试后续技能\n"
                 "这可以用于更精细地控制技能释放顺序，\n"
@@ -82,65 +88,43 @@ class BattleMixin(BaseEfTask):
         # 用于识别 LV 或等级文字
         self.lv_regex = re.compile(r"(?i)lv|\d{2}")
 
-    def _parse_skill_sequence(self, raw_config: str) -> list[str]:
+    def _parse_skill_sequence(self, raw_config) -> list[str]:
         """
-        解析技能释放顺序，兼容两种格式：
-
-        1️⃣ 老格式（纯数字）：
-            "123" -> ["1","2","3"]
-
-        2️⃣ 新格式（逗号分隔）：
+        解析技能释放顺序（逗号分隔格式，用于排轴序列）：
             "ult_1,1,2,e,sleep_2,3"
         """
-
         if not raw_config:
             return ["1", "2", "3"]
 
-        trimmed = raw_config.strip()
+        sequence = []
+        valid_skills = {"1", "2", "3", "4", "e"}
 
-        # =========================
-        # ✅ 新格式：逗号分隔（支持中文逗号）
-        # =========================
-        if "," in trimmed or "，" in trimmed:
-            sequence = []
-            tokens = parse_sequence(trimmed)
-
-            valid_skills = {"1", "2", "3", "4", "e"}
-
-            for token in tokens:
-                if token in valid_skills:
+        for token in parse_sequence(raw_config):
+            if token in valid_skills:
+                sequence.append(token)
+            elif token.startswith("ult_"):
+                if token[4:] in {"1", "2", "3", "4"}:
                     sequence.append(token)
-
-                elif token.startswith("ult_"):
-                    if token[4:] in {"1", "2", "3", "4"}:
-                        sequence.append(token)
-                    else:
-                        self.log_info(f"无效 ult 技能: {token}")
-
-                elif token.startswith("sleep_"):
-                    try:
-                        float(token[6:])
-                        sequence.append(token)
-                    except ValueError:
-                        self.log_info(f"无效 sleep 参数: {token}")
-
                 else:
-                    self.log_info(f"忽略无效技能: {token}")
+                    self.log_info(f"无效 ult 技能: {token}")
+            elif token.startswith("sleep_"):
+                try:
+                    float(token[6:])
+                    sequence.append(token)
+                except ValueError:
+                    self.log_info(f"无效 sleep 参数: {token}")
+            elif token.startswith("normal_"):
+                try:
+                    val = float(token[7:])
+                    if val <= 0:
+                        raise ValueError
+                    sequence.append(token)
+                except ValueError:
+                    self.log_info(f"无效 normal 持续时间: {token}")
+            else:
+                self.log_info(f"忽略无效技能: {token}")
 
-            return sequence if sequence else ["1", "2", "3"]
-
-        # =========================
-        # ✅ 老格式：纯数字逐字符
-        # =========================
-        else:
-            sequence = []
-            valid_skills = {"1", "2", "3", "4"}
-
-            for char in trimmed:
-                if char in valid_skills:
-                    sequence.append(char)
-
-            return sequence if sequence else ["1", "2", "3"]
+        return sequence if sequence else ["1", "2", "3"]
 
     def use_ult(self, ult_sequence: str = None):
         """
