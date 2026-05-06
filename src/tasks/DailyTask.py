@@ -1,6 +1,5 @@
 from qfluentwidgets import FluentIcon
 
-from src.tasks.account.account_mixin import AccountMixin
 from src.tasks.daily.daily_battle_mixin import DailyBattleMixin
 from src.tasks.daily.daily_buy_mixin import DailyBuyMixin
 from src.tasks.daily.daily_liaison_mixin import DailyLiaisonMixin
@@ -9,6 +8,8 @@ from src.tasks.daily.daily_shop_mixin import DailyShopMixin
 from src.tasks.daily.daily_trade_mixin import DailyTradeMixin
 from src.tasks.daily.daily_task_runner import DailyTaskRunner
 from src.tasks.mixin.end_command_mixin import EndCommandMixin
+from src.tasks.mixin.login_mixin import LoginMixin
+
 
 class DailyTask(
     DailyBuyMixin,  # 买物资
@@ -18,7 +19,7 @@ class DailyTask(
     DailyRoutineMixin,  # 其它
     DailyLiaisonMixin,  # 送礼
     EndCommandMixin,
-    AccountMixin
+    LoginMixin,
 ):
     """日常任务聚合执行器。"""
 
@@ -72,6 +73,12 @@ class DailyTask(
         ]
 
     def run(self):
+        can_run = self.can_run_accounts()
+        if self.multi_account_mode and can_run and self.config.get("重复测试的次数", 1) == 1:
+            self.run_multi_account()
+        else:
+            self.run_one_account({"username": "default", "password": "", "account_id": ""})
+    
+    def run_one_account(self, account_info):
         """日常任务主入口。"""
-        repeat_times = self.config.get("重复测试的次数", 1) if self.debug else 1
-        DailyTaskRunner(self, self.build_task_plan()).run(repeat_times=repeat_times)
+        DailyTaskRunner(self, self.build_task_plan()).run()

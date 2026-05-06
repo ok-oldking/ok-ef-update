@@ -30,7 +30,7 @@ class DeliveryRow:
     box: Tuple[float, float, float, float]  # (x1, y1, x2, y2)
 
 
-class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
+class DeliveryTask(ZipLineMixin, MapMixin):
     """运输委托自动化任务类 - 处理游戏中的送货操作"""
 
     # 配置键名常量
@@ -500,7 +500,7 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
                 self.wait_pop_up(after_sleep=2)
                 break
 
-    def _run_single_delivery_cycle(self):
+    def run_one_account(self, account_info):
         if self.config.get(self.CFG_TEST_TARGET) == self.TEST_NONE:
             ends_list_pattern_dict = {}
             for end in self.ends:
@@ -597,16 +597,7 @@ class DeliveryTask(AccountMixin, ZipLineMixin, MapMixin):
                 self.zip_line_list_go(zip_line_list, need_scroll=self.config.get(self.CFG_SCROLL_ENABLE))
 
     def run(self):
-        """运输委托任务的主入口，支持与日常任务一致的多账号执行逻辑。"""
-        try:
-            allow_multi = self.config.get(self.CFG_TEST_TARGET) == self.TEST_NONE
-            for repeat_idx, repeat_times in self.iter_multi_account_context(
-                repeat_times=1,
-                empty_accounts_message="多账户模式已开启，但账号列表为空，自动送货任务结束",
-                account_log_suffix="自动送货",
-                allow_multi_account=allow_multi,
-            ):
-                self._run_single_delivery_cycle()
-
-        except Exception as e:
-            self.handle_task_exception(e, 'DeliveryTask_Exception')
+        if self.multi_account_mode and self.config.get(self.CFG_TEST_TARGET) == self.TEST_NONE:
+            self.run_multi_account()
+        else:
+            self.run_one_account({"username": "default", "password": "", "account_id": ""})
