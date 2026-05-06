@@ -93,6 +93,21 @@
         </message>
     </context>
     <context>
+        <name>LabelAndButtonList</name>
+        <message>
+            <source>Delete Last Item</source>
+            <translation>마지막 항목 삭제</translation>
+        </message>
+        <message>
+            <source>Reset</source>
+            <translation>재설정</translation>
+        </message>
+        <message>
+            <source>(empty)</source>
+            <translation>(비어있음)</translation>
+        </message>
+    </context>
+    <context>
         <name>AppConfigWidget</name>
         <message>
             <source>Theme</source>

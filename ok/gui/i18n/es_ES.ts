@@ -93,6 +93,21 @@
         </message>
     </context>
     <context>
+        <name>LabelAndButtonList</name>
+        <message>
+            <source>Delete Last Item</source>
+            <translation>Eliminar último elemento</translation>
+        </message>
+        <message>
+            <source>Reset</source>
+            <translation>Restablecer</translation>
+        </message>
+        <message>
+            <source>(empty)</source>
+            <translation>(vacío)</translation>
+        </message>
+    </context>
+    <context>
         <name>AppConfigWidget</name>
         <message>
             <source>Theme</source>

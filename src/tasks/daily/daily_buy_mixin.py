@@ -19,11 +19,11 @@ class DailyBuyMixin(Common):
                 "依次购买「日用消耗」「工业货品」「人文物产」首行某个物品。"
             ),
             "购物白名单": (
-                "默认留空，表示购买「日用消耗」「工业货品」首行首个物资。\n"
+                "默认留空，表示购买「日用消耗」「工业货品」「人文物产」首行首个物资。\n"
                 "更多用法参见 ./docs/日常任务.md > 买物资 。"
             ),
             "是否买礼物": (
-                "是否购买「人文物产」。"
+                "是否购买「人文物产」（同样应用购物白名单序列）。"
             ),
         })
         self.default_config_group.update({
@@ -52,7 +52,7 @@ class DailyBuyMixin(Common):
             if self.config.get("是否买礼物", True):
                 self.click_relative(100/3840, 972/2160, after_sleep=2)
                 self.log_info("购买「人文物产」")
-                self.buy()
+                self.buy(pattern_list=pl)
 
     def buy(self, pattern_list=[]):
         if len(pattern_list) <= 0:

@@ -38,7 +38,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
             "体力本": "干员经验",
             self.CFG_STAGE_REWARD_TIER: self.REWARD_TIER_KEEP,
             "刷体力开始日期": today_str,  # 默认当天，可自定义
-            "刷本序列": "",  # 为空表示不启用自动轮换
+            "刷本序列": [],  # 为空表示不启用自动轮换
             "仅站桩": False,
             "体力刷完后继续刷取次数": 0,
             self.CFG_SCROLL_ENABLE: False,
@@ -197,7 +197,7 @@ class DailyBattleMixin(MapMixin, ZipLineMixin, BattleMixin, Common):
         stage_reward_tier_override = None
         ignore_config_reward_tier = False
 
-        seq = self.config.get("刷本序列", "")
+        seq = self.config.get("刷本序列", [])
         self.log_info(f"检测到刷本序列配置: {seq if seq else '(空)'}")
         start_date = self.config.get("刷体力开始日期", "2026-04-05")
         auto_stage = None
