@@ -72,7 +72,7 @@ class LoginMixin(BaseEfTask):
         self.active_and_send_mouse_delta(0, 0, activate=True, only_activate=True)
         self.wait_click_ocr(match=re.compile("确认"), time_out=10, box=self.box.bottom_right, after_sleep=2)
         self._logged_in = False
-        result=self.click_text(re.compile("最近"), box=self.box.center, need_wait_disappear=False)  # 点击当前账号（假设是唯一的）"最近", box=self.box.center, need_wait_disappear=False)  # 点击当前账号（假设是唯一的）
+        result=self.click_text(re.compile("最近"), box=self.box.center, success_match=re.compile("上次"), need_wait_disappear=False)  # 点击当前账号（假设是唯一的）"最近", box=self.box.center, need_wait_disappear=False)  # 点击当前账号（假设是唯一的）
         if not result:
             self.log_error("未找到‘最近’按钮，可能未成功返回登录界面")
             raise RuntimeError("未找到‘最近’按钮，可能未成功返回登录界面")
@@ -121,71 +121,100 @@ class LoginMixin(BaseEfTask):
 
         pyperclip.copy(text)
         pyautogui.hotkey("ctrl", "v")
-    def click_text(self, match: str, box=None, need_wait_disappear: bool = True) -> Box|None:
+    def click_text(
+        self,
+        match: str,
+        box=None,
+        need_wait_disappear: bool = True,
+        success_match: str | None = None,
+    ) -> Box | None:
         """
-        在指定区域使用 OCR 查找并点击包含指定文本的 UI 元素，支持重试与确认消失逻辑。
+        OCR 查找并点击文本。
 
         Args:
-            text (str): 要点击的文本（支持正则匹配传入字符串会被编译为正则）。
-            box (Optional[BoxLike]): 搜索的区域，默认为 `self.box.bottom`。
-            need_wait_disappear (bool): 如果为 True，则点击后会等待该文本从界面上消失以确认点击生效；为 False 时立即返回。
-
-        Returns:
-            Box|None: 如果成功点击则返回点击的结果box；如果 `need_wait_disappear` 为 True，则在目标消失后返回点击的结果box。超时或未点击返回 None。
-
-        Notes:
-            - 方法内部会进行最多 60 秒的重试；成功条件为至少点击过一次（或在未找到时认为未点击）。
-            - 当 `need_wait_disappear` 为 True 时，方法会在点击后等待目标从界面上消失以确认生效。
+            match: 要点击的目标文本
+            box: 搜索区域
+            need_wait_disappear:
+                True 时点击后等待目标消失
+            success_match:
+                点击后若检测到该文本，也视为成功
         """
         if box is None:
             box = self.box.bottom
-        start_time = time.time()
-        clicked = False
-        while time.time() - start_time < 60:
-            ocr_result = self.login_ocr(match=match, box=box, need_active=False)   
 
+        start_time = time.time()
+        clicked_result = None
+
+        while time.time() - start_time < 60:
+
+            ocr_result = self.login_ocr(
+                match=match,
+                box=box,
+                need_active=False
+            )
+
+            # 没找到目标
             if not ocr_result:
-                # 未找到目标
-                if clicked:
-                    # 已经点击过
-                    if need_wait_disappear:
-                        # 需要确认消失：目标已不在界面，视为成功
-                        self.log_info(f"点击并确认目标已消失: {match}")
-                        return ocr_result
-                    else:
-                        # 无需等待消失，已点击即为成功
-                        return ocr_result
-                # 未点击过，继续等待
+
+                # 如果需要等待消失
+                if clicked_result and need_wait_disappear:
+                    self.log_info(f"点击并确认目标已消失: {match}")
+                    return clicked_result
+
                 self.sleep(1)
                 continue
 
-            # 找到目标，执行点击
-            if ocr_result:
-                run_at_window_pos(
-                    self.hwnd.hwnd,
-                    pyautogui.click,
-                    ocr_result[0].x + ocr_result[0].width // 2,
-                    ocr_result[0].y + ocr_result[0].height // 2,
-                )
-            clicked = True
+            # 找到目标 -> 点击
+            target = ocr_result[0]
 
-            self.sleep(1)  # 给UI反应时间
+            run_at_window_pos(
+                self.hwnd.hwnd,
+                pyautogui.click,
+                target.x + target.width // 2,
+                target.y + target.height // 2,
+            )
 
-            if not need_wait_disappear:
-                return ocr_result
+            clicked_result = ocr_result
 
-            # 需要等待消失，继续循环检查是否消失
-            check = self.login_ocr(match=match, box=box, need_active=False)
-            if not check:
-                self.log_info(f"点击后目标已消失: {match}")
-                return ocr_result
-
-            # 还在 → 说明没点到 / 没反应，记录并重试
-            self.log_debug("点击后仍检测到‘" + match + "’，准备重试")
             self.sleep(1)
 
-        # 超时结束：如果曾经点击过且不要求消失，则也返回 True（上方已处理），否则返回 False
-        if clicked and not need_wait_disappear:
-            return ocr_result
-        self.log_error("点击" + match + "超时或未成功")
+            # 不需要等待
+            if not need_wait_disappear and not success_match:
+                return clicked_result
+
+            # ---------- 检测 success_match ----------
+            if success_match:
+                success = self.login_ocr(
+                    match=success_match,
+                    box=box,
+                    need_active=False
+                )
+
+                if success:
+                    self.log_info(
+                        f"点击后检测到成功目标: {success_match}"
+                    )
+                    return clicked_result
+
+            # ---------- 检测原目标是否消失 ----------
+            if need_wait_disappear:
+                check = self.login_ocr(
+                    match=match,
+                    box=box,
+                    need_active=False
+                )
+
+                if not check:
+                    self.log_info(
+                        f"点击后目标已消失: {match}"
+                    )
+                    return clicked_result
+
+            self.log_debug(
+                f"点击后仍检测到'{match}'，准备重试"
+            )
+
+            self.sleep(1)
+
+        self.log_error(f"点击{match}超时或未成功")
         return None
