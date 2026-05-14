@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 
-version = "v0.2.77"
+version = "v0.2.78"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -113,7 +113,9 @@ config = {
         },
     },
     "screenshots_folder": "screenshots",  # 截图存放目录, 每次重新启动会清空目录
-    "yolo": {"model_path": "assets/models/yolo/best.onnx"},  # YOLO 模型路径（相对项目根目录或绝对路径）
+    "yolo": {
+        "default_model": "battle_end_default",
+    },  # YOLO 配置；模型与labels请维护在 src/yolo/models.py
     "gui_title": "ok-ef",  # 窗口名
     "template_matching": {  # 可选, 如使用OpenCV的模板匹配
         "coco_feature_json": os.path.join("assets", "coco_annotations.json"),
@@ -135,8 +137,11 @@ config = {
         ["src.tasks.BattleTask", "BattleTask"],
         ["src.tasks.PeriodicScreenshotTask", "PeriodicScreenshotTask"],
         ["src.tasks.TestStartGame", "TestStartGame"],
-        ["src.tasks.Test", "Test"],
+        ["src.tasks.RealtimeDetectTask", "RealtimeDetectTask"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
+    ],
+    "custom_tabs": [
+        ["src.gui.AccountConfigTab", "AccountConfigTab"],
     ],
     "trigger_tasks": [  # 不断执行的触发式任务
         ["src.tasks.AutoCombatTask", "AutoCombatTask"],

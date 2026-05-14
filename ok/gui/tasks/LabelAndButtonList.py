@@ -92,10 +92,9 @@ class LabelAndButtonList(ConfigLabelAndWidget):
         # if stored as string (old), convert to list
         if isinstance(current, str):
             current = [s.strip() for s in current.split(",") if s.strip()]
-        # create a new list (avoid mutating the stored list in-place so change is detected)
-        new_list = list(current)
-        new_list.append(item)
-        self.update_config(new_list)
+        # allow duplicates
+        current.append(item)
+        self.update_config(current)
         self.update_display_label()
 
     def delete_last_item(self):
