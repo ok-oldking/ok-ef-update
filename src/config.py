@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 
-version = "v0.2.82"
+version = "v0.2.83"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -137,6 +137,7 @@ config = {
         ["src.tasks.BattleTask", "BattleTask"],
         ["src.tasks.PeriodicScreenshotTask", "PeriodicScreenshotTask"],
         ["src.tasks.TestStartGame", "TestStartGame"],
+        ["src.tasks.Test", "Test"],
         ["src.tasks.RealtimeDetectTask", "RealtimeDetectTask"],
         ["ok.task.DiagnosisTask", "DiagnosisTask"],
     ],
