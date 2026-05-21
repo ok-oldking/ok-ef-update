@@ -5,7 +5,7 @@ from ok import ConfigOption
 from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 
-version = "v0.2.85"
+version = "v0.2.86"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -72,6 +72,11 @@ config = {
 
         # 标签枚举的相对路径
         'label_enum_relative_path': 'src/data/FeatureList',
+    },
+    'item_map': {
+        # 物品地图数据的相对路径
+        'summary_json': os.path.join('assets', 'items', 'map', 'summary.json'),
+        'item_names_json': os.path.join('assets', 'items', 'map', 'item_names.json'),
     },
     "windows": {  # Windows游戏请填写此设置
         "exe": ["Endfield.exe"],
@@ -149,5 +154,6 @@ config = {
         ["src.tasks.AutoSkipDialogTask", "AutoSkipDialogTask"],
         ["src.tasks.AutoPickTask", "AutoPickTask"],
         ["src.tasks.AutoLoginTask", "AutoLoginTask"],
+        ["src.tasks.ItemNavigatorTask", "ItemNavigatorTask"],
     ],
 }
