@@ -400,6 +400,18 @@
             <source>Cancel</source>
             <translation>Cancel</translation>
         </message>
+        <message>
+            <source>Available Options</source>
+            <translation>Available Options</translation>
+        </message>
+        <message>
+            <source>Selected Options</source>
+            <translation>Selected Options</translation>
+        </message>
+        <message>
+            <source>Click an option to add it.</source>
+            <translation>Click an option to add it.</translation>
+        </message>
     </context>
     <context>
         <name>ModifyListItem</name>
@@ -744,6 +756,14 @@
             <source>Can't start game, make sure the game is installed</source>
             <translation>Can't start game, make sure the game is installed</translation>
         </message>
+        <message>
+            <source>NVIDIA/AMD filters or sharpening are enabled and may cause malfunctions!</source>
+            <translation>NVIDIA/AMD filters or sharpening are enabled and may cause malfunctions!</translation>
+        </message>
+        <message>
+            <source>GPU Driver Warning</source>
+            <translation>GPU Driver Warning</translation>
+        </message>
     </context>
     <context>
         <name>StartLoadingDialog</name>
@@ -838,6 +858,14 @@
             <source>OCR</source>
             <translation>OCR</translation>
         </message>
+        <message>
+            <source>Screenshot Folder</source>
+            <translation>Screenshot Folder</translation>
+        </message>
+        <message>
+            <source>Log Folder</source>
+            <translation>Log Folder</translation>
+        </message>
     </context>
     <context>
         <name>TaskButtons</name>
@@ -915,6 +943,10 @@
         <message>
             <source>Resume</source>
             <translation>Resume</translation>
+        </message>
+        <message>
+            <source>Waiting for {task_name} task to be completed</source>
+            <translation>Waiting for {task_name} task to be completed</translation>
         </message>
     </context>
     <context>
@@ -2575,21 +2607,6 @@
         <message>
             <source>NPU inferring Error, you might need to update the Intel NPU driver!</source>
             <translation>NPU inferring Error, you might need to update the Intel NPU driver!</translation>
-        </message>
-    </context>
-    <context>
-        <name>LabelAndButtonList</name>
-        <message>
-            <source>Delete Last Item</source>
-            <translation>Delete Last Item</translation>
-        </message>
-        <message>
-            <source>(empty)</source>
-            <translation>(empty)</translation>
-        </message>
-        <message>
-            <source>Reset</source>
-            <translation>Reset</translation>
         </message>
     </context>
 </TS>

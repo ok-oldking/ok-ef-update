@@ -411,6 +411,18 @@
             <source>Cancel</source>
             <translation>취소</translation>
         </message>
+        <message>
+            <source>Available Options</source>
+            <translation>사용 가능한 옵션</translation>
+        </message>
+        <message>
+            <source>Selected Options</source>
+            <translation>선택한 옵션</translation>
+        </message>
+        <message>
+            <source>Click an option to add it.</source>
+            <translation>추가할 옵션을 클릭하세요.</translation>
+        </message>
     </context>
     <context>
         <name>ModifyListItem</name>
@@ -743,6 +755,14 @@
             <source>Can't start game, make sure the game is installed</source>
             <translation>게임을 시작할 수 없습니다. 게임이 설치되었는지 확인하세요</translation>
         </message>
+        <message>
+            <source>NVIDIA/AMD filters or sharpening are enabled and may cause malfunctions!</source>
+            <translation>NVIDIA/AMD 필터 또는 선명화가 활성화되어 있어 오작동을 일으킬 수 있습니다!</translation>
+        </message>
+        <message>
+            <source>GPU Driver Warning</source>
+            <translation>GPU 드라이버 경고</translation>
+        </message>
     </context>
     <context>
         <name>StartLoadingDialog</name>
@@ -837,6 +857,14 @@
             <source>OCR</source>
             <translation>OCR</translation>
         </message>
+        <message>
+            <source>Screenshot Folder</source>
+            <translation>스크린샷 폴더</translation>
+        </message>
+        <message>
+            <source>Log Folder</source>
+            <translation>로그 폴더</translation>
+        </message>
     </context>
     <context>
         <name>TaskButtons</name>
@@ -914,6 +942,10 @@
         <message>
             <source>Resume</source>
             <translation>재개</translation>
+        </message>
+        <message>
+            <source>Waiting for {task_name} task to be completed</source>
+            <translation>{task_name} 작업 완료 대기 중</translation>
         </message>
     </context>
     <context>
@@ -2574,21 +2606,6 @@
         <message>
             <source>NPU inferring Error, you might need to update the Intel NPU driver!</source>
             <translation>NPU 추론 오류, Intel NPU 드라이버를 업데이트해야 할 수 있습니다!</translation>
-        </message>
-    </context>
-    <context>
-        <name>LabelAndButtonList</name>
-        <message>
-            <source>Delete Last Item</source>
-            <translation>마지막 항목 삭제</translation>
-        </message>
-        <message>
-            <source>(empty)</source>
-            <translation>（비어있음）</translation>
-        </message>
-        <message>
-            <source>Reset</source>
-            <translation>재설정</translation>
         </message>
     </context>
 </TS>

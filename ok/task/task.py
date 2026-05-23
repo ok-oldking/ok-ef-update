@@ -20,12 +20,16 @@ from ok.util.logger import Logger
 from ok.util.process import create_shortcut
 
 VALID_NAMED_KEYS = {
-    'esc', 'tab', 'shift', 'lshift', 'rshift', 'ctrl', 'lctrl', 'rctrl', 'alt', 'lalt', 'ralt',
-    'enter', 'return', 'space', 'backspace', 'up', 'down', 'left', 'right', 'pageup', 'pagedown',
+    'esc', 'tab', 'shift', 'lshift', 'rshift', 'shift_l', 'shift_r',
+    'ctrl', 'control', 'lctrl', 'rctrl', 'lcontrol', 'rcontrol', 'ctrl_l', 'ctrl_r',
+    'alt', 'lalt', 'ralt', 'alt_l', 'alt_r', 'alt_gr',
+    'enter', 'return', 'space', 'backspace', 'up', 'down', 'left', 'right',
+    'pageup', 'pagedown', 'page_up', 'page_down',
     'home', 'end', 'insert', 'delete', 'capslock', 'numlock', 'scrolllock', 'printscreen',
+    'caps_lock', 'num_lock', 'scroll_lock', 'print_screen',
     'f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12',
     'num0', 'num1', 'num2', 'num3', 'num4', 'num5', 'num6', 'num7', 'num8', 'num9',
-    'windows', 'command', 'meta'
+    'windows', 'win', 'command', 'cmd', 'cmd_l', 'cmd_r', 'meta'
 }
 
 logger = Logger.get_logger(__name__)
@@ -142,7 +146,7 @@ class ExecutorOperation:
         :return: True if successful. 如果成功返回 True。
         """
         if isinstance(x, Box) or isinstance(x, list):
-            return self.click_box(x, move_back=move_back, down_time=down_time, after_sleep=after_sleep)
+            return self.click_box(x, move_back=move_back, move=move, down_time=down_time, after_sleep=after_sleep)
         elif 0 < x < 1 or 0 < y < 1:
             return self.click_relative(x, y, move_back=move_back, move=move, interval=interval, after_sleep=after_sleep,
                                        name=name, down_time=down_time, key=key, hcenter=hcenter, vcenter=vcenter)
@@ -160,8 +164,10 @@ class ExecutorOperation:
         self.executor.reset_scene()
         return True
 
-    def back(self, *args, **kwargs):
+    def back(self, *args, after_sleep=0, **kwargs):
         self.executor.interaction.back(*args, **kwargs)
+        if after_sleep > 0:
+            self.sleep(after_sleep)
 
     def middle_click(self, *args, **kwargs):
         return self.click(*args, **kwargs, key="middle")
@@ -322,7 +328,8 @@ class ExecutorOperation:
         if self.is_adb():
             self.executor.device_manager.adb_ensure_in_front()
         elif self.hwnd:
-            self.hwnd.bring_to_front()
+            if not self.hwnd.bring_to_front():
+                self.logger.warning("ensure_in_front: bring_to_front failed, continuing")
         else:
             self.logger.warning("ensure_in_front: not adb and no hwnd found")
 
@@ -386,7 +393,7 @@ class ExecutorOperation:
         self.executor.reset_scene()
 
     def click_box(self, box: Box | List[Box] = None, relative_x=0.5, relative_y=0.5, raise_if_not_found=False,
-                  move_back=False, down_time=0.01, after_sleep=1):
+                  move_back=False, move=True, down_time=0.01, after_sleep=1):
         """
         Clicks on a box.
 
@@ -414,7 +421,7 @@ class ExecutorOperation:
                 raise Exception(f"click_box box is None")
             return
         x, y = box.relative_with_variance(relative_x, relative_y)
-        return self.click(x, y, name=box.name, move_back=move_back, down_time=down_time, after_sleep=after_sleep)
+        return self.click(x, y, name=box.name, move_back=move_back, move=move, down_time=down_time, after_sleep=after_sleep)
 
     def wait_scene(self, scene_type=None, time_out=0, pre_action=None, post_action=None):
         """
@@ -473,15 +480,19 @@ class ExecutorOperation:
     def get_global_config_desc(self, option):
         return self.executor.global_config.get_config_desc(option)
 
-    def send_key_down(self, key):
+    def send_key_down(self, key, after_sleep=0):
         key = self.validate_key(key)
         self.executor.reset_scene()
         self.executor.interaction.send_key_down(key)
+        if after_sleep > 0:
+            self.sleep(after_sleep)
 
-    def send_key_up(self, key):
+    def send_key_up(self, key, after_sleep=0):
         key = self.validate_key(key)
         self.executor.reset_scene()
         self.executor.interaction.send_key_up(key)
+        if after_sleep > 0:
+            self.sleep(after_sleep)
 
     def wait_until(self, condition, time_out=0, pre_action=None, post_action=None, settle_time=-1,
                    raise_if_not_found=False):
@@ -588,22 +599,24 @@ class FindFeature(ExecutorOperation):
             box = self.executor.feature_set.get_box_by_name(self.frame, name)
             if box:
                 return box
-        if name == 'right':
-            return self.box_of_screen(0.5, 0, 1, 1)
+        if name == 'full_screen':
+            return self.box_of_screen(0, 0, 1, 1, name=name)
+        elif name == 'right':
+            return self.box_of_screen(0.5, 0, 1, 1, name=name)
         elif name == 'bottom_right':
-            return self.box_of_screen(0.5, 0.5, 1, 1)
+            return self.box_of_screen(0.5, 0.5, 1, 1, name=name)
         elif name == 'top_right':
-            return self.box_of_screen(0.5, 0, 1, 0.5)
+            return self.box_of_screen(0.5, 0, 1, 0.5, name=name)
         elif name == 'left':
-            return self.box_of_screen(0, 0, 0.5, 1)
+            return self.box_of_screen(0, 0, 0.5, 1, name=name)
         elif name == 'bottom_left':
-            return self.box_of_screen(0, 0.5, 0.5, 1)
+            return self.box_of_screen(0, 0.5, 0.5, 1, name=name)
         elif name == 'top_left':
-            return self.box_of_screen(0, 0, 0.5, 0.5)
+            return self.box_of_screen(0, 0, 0.5, 0.5, name=name)
         elif name == 'bottom':
-            return self.box_of_screen(0, 0.5, 1, 1)
+            return self.box_of_screen(0, 0.5, 1, 1, name=name)
         elif name == 'top':
-            return self.box_of_screen(0, 0, 1, 0.5)
+            return self.box_of_screen(0, 0, 1, 0.5, name=name)
         else:
             raise ValueError(f"No box found for category {name}")
 
@@ -1057,7 +1070,6 @@ class BaseTask(OCR):
         self.exit_after_task = False
         self.info = {}
         self.default_config = {}
-        self.default_config_group = {}
         self.global_config_names = []
         self.config_description = {}
         self.config_type = {}
@@ -1077,6 +1089,8 @@ class BaseTask(OCR):
         self.sleep_check_interval = -1
         self.last_sleep_check_time = 0
         self.in_sleep_check = False
+        self.enable_after_start = False
+        self.visible = True
         self.support_schedule_task = False
 
     def run_task_by_class(self, cls):
@@ -1137,13 +1151,22 @@ class BaseTask(OCR):
         else:
             return "Not Started"
 
+    def ensure_capture(self, config=None):
+        if config is None:
+            config = self.capture_config
+        if config:
+            return self.executor.device_manager.ensure_capture(config)
+
+    def update_capture(self, config):
+        return self.executor.device_manager.update_capture(config)
+
     def enable(self):
         if not self._enabled:
             self._enabled = True
             self.info_clear()
-            if self.capture_config:
-                self.executor.device_manager.ensure_capture(self.capture_config)
+            self.ensure_capture()
             self.executor.interaction.on_run()
+            self.executor.enqueue_onetime_task(self)
             logger.info(f'enabled task {self}')
         communicate.task.emit(self)
 
@@ -1247,7 +1270,6 @@ class BaseTask(OCR):
         self.info[key] = self.info.get(key, 0) + count
 
     def load_config(self):
-        # default_config_group is UI-only grouping metadata; it does not alter config schema.
         self.config = Config(self.__class__.__name__, self.default_config, validator=self.validate)
 
     def validate(self, key, value):
@@ -1262,6 +1284,7 @@ class BaseTask(OCR):
 
     def disable(self):
         self._enabled = False
+        self.executor.remove_onetime_task(self)
         communicate.task.emit(self)
 
     @property

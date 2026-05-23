@@ -410,6 +410,18 @@
             <source>Cancel</source>
             <translation>取消</translation>
         </message>
+        <message>
+            <source>Available Options</source>
+            <translation>可用選項</translation>
+        </message>
+        <message>
+            <source>Selected Options</source>
+            <translation>已選選項</translation>
+        </message>
+        <message>
+            <source>Click an option to add it.</source>
+            <translation>點擊選項以新增。</translation>
+        </message>
     </context>
     <context>
         <name>ModifyListItem</name>
@@ -742,6 +754,14 @@
             <source>Can't start game, make sure the game is installed</source>
             <translation>無法啟動遊戲，請確認遊戲已安裝！</translation>
         </message>
+        <message>
+            <source>NVIDIA/AMD filters or sharpening are enabled and may cause malfunctions!</source>
+            <translation>NVIDIA/AMD 濾鏡或銳化已啟用，可能導致功能異常！</translation>
+        </message>
+        <message>
+            <source>GPU Driver Warning</source>
+            <translation>GPU 驅動警告</translation>
+        </message>
     </context>
     <context>
         <name>StartLoadingDialog</name>
@@ -832,6 +852,14 @@
             <source>Capture</source>
             <translation>截圖</translation>
         </message>
+        <message>
+            <source>Screenshot Folder</source>
+            <translation>截圖目錄</translation>
+        </message>
+        <message>
+            <source>Log Folder</source>
+            <translation>日誌目錄</translation>
+        </message>
     </context>
     <context>
         <name>TaskButtons</name>
@@ -909,6 +937,10 @@
         <message>
             <source>Resume</source>
             <translation>繼續</translation>
+        </message>
+        <message>
+            <source>Waiting for {task_name} task to be completed</source>
+            <translation>等待 {task_name} 任務完成</translation>
         </message>
     </context>
     <context>
@@ -2569,21 +2601,6 @@
         <message>
             <source>NPU inferring Error, you might need to update the Intel NPU driver!</source>
             <translation>NPU推理錯誤，您可能需要更新Intel NPU驅動程式！</translation>
-        </message>
-    </context>
-    <context>
-        <name>LabelAndButtonList</name>
-        <message>
-            <source>Delete Last Item</source>
-            <translation>刪除最後一項</translation>
-        </message>
-        <message>
-            <source>(empty)</source>
-            <translation>（空）</translation>
-        </message>
-        <message>
-            <source>Reset</source>
-            <translation>重置</translation>
         </message>
     </context>
 </TS>

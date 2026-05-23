@@ -410,6 +410,18 @@
             <source>Cancel</source>
             <translation>Cancelar</translation>
         </message>
+        <message>
+            <source>Available Options</source>
+            <translation>Opciones disponibles</translation>
+        </message>
+        <message>
+            <source>Selected Options</source>
+            <translation>Opciones seleccionadas</translation>
+        </message>
+        <message>
+            <source>Click an option to add it.</source>
+            <translation>Haz clic en una opción para añadirla.</translation>
+        </message>
     </context>
     <context>
         <name>ModifyListItem</name>
@@ -742,6 +754,14 @@
             <source>Can't start game, make sure the game is installed</source>
             <translation>No se puede iniciar el juego, asegúrate de que el juego está instalado</translation>
         </message>
+        <message>
+            <source>NVIDIA/AMD filters or sharpening are enabled and may cause malfunctions!</source>
+            <translation>¡Los filtros o la nitidez de NVIDIA/AMD están activados y pueden causar fallos de funcionamiento!</translation>
+        </message>
+        <message>
+            <source>GPU Driver Warning</source>
+            <translation>Advertencia del controlador de GPU</translation>
+        </message>
     </context>
     <context>
         <name>StartLoadingDialog</name>
@@ -836,6 +856,14 @@
             <source>OCR</source>
             <translation>OCR</translation>
         </message>
+        <message>
+            <source>Screenshot Folder</source>
+            <translation>Carpeta de capturas</translation>
+        </message>
+        <message>
+            <source>Log Folder</source>
+            <translation>Carpeta de registros</translation>
+        </message>
     </context>
     <context>
         <name>TaskButtons</name>
@@ -913,6 +941,10 @@
         <message>
             <source>Resume</source>
             <translation>Reanudar</translation>
+        </message>
+        <message>
+            <source>Waiting for {task_name} task to be completed</source>
+            <translation>Esperando a que se complete la tarea {task_name}</translation>
         </message>
     </context>
     <context>
@@ -2573,21 +2605,6 @@
         <message>
             <source>NPU inferring Error, you might need to update the Intel NPU driver!</source>
             <translation>¡Error de inferencia de la NPU, es posible que necesite actualizar el controlador de la NPU de Intel!</translation>
-        </message>
-    </context>
-    <context>
-        <name>LabelAndButtonList</name>
-        <message>
-            <source>Delete Last Item</source>
-            <translation>Eliminar último elemento</translation>
-        </message>
-        <message>
-            <source>(empty)</source>
-            <translation>（vacío）</translation>
-        </message>
-        <message>
-            <source>Reset</source>
-            <translation>Reiniciar</translation>
         </message>
     </context>
 </TS>

@@ -12,7 +12,7 @@ from qfluentwidgets import (PushButton, PrimaryPushButton, FluentIcon,
                             isDarkTheme, SplitTitleBar, RoundMenu,
                             Action)
 
-from ok.gui.tasks.TemplateTab import (load_coco, save_coco)
+from ok.gui.tasks.TemplateTab import (load_coco, save_coco, get_image_entry_for_path)
 from ok.gui.widget.BaseWindow import BaseWindow
 from ok.util.logger import Logger
 
@@ -833,16 +833,21 @@ class AnnotationCanvas(QWidget):
             return
         ix, iy = self._widget_to_img(pos.x(), pos.y())
         ix, iy = int(ix), int(iy)
+        
+        rel_x = ix / self._image.width() if self._image.width() else 0
+        rel_y = iy / self._image.height() if self._image.height() else 0
+        pos_text = f"Abs: ({ix}, {iy}) Rel: ({rel_x:.3f}, {rel_y:.3f})"
+
         if 0 <= ix < self._image.width() and 0 <= iy < self._image.height():
             color = self._image.pixelColor(ix, iy)
-            text = f"R:{color.red()} G:{color.green()} B:{color.blue()}"
+            text = f"R:{color.red():<3} G:{color.green():<3} B:{color.blue():<3} {pos_text}"
             self._current_color_text = f"({color.red()},{color.green()},{color.blue()})"
             if self.markup_window:
                 self.markup_window.update_color_label(text, color)
         else:
             self._current_color_text = ""
             if self.markup_window:
-                self.markup_window.update_color_label("")
+                self.markup_window.update_color_label(pos_text)
 
     def wheelEvent(self, event: QWheelEvent):
         """Zoom in/out with mouse wheel, anchored at mouse position."""
@@ -986,9 +991,8 @@ class MarkUpWindow(BaseWindow):
         toolbar.addStretch(1)
 
         self.image_name_label = BodyLabel("")
+        self.image_name_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         toolbar.addWidget(self.image_name_label)
-
-        toolbar.addStretch(1)
 
         main_layout.addLayout(toolbar)
 
@@ -1042,13 +1046,16 @@ class MarkUpWindow(BaseWindow):
         image_path = self.image_list[self.current_index]
         self.canvas.set_image(image_path)
 
+        resolution_str = ""
+        if self.canvas.pixmap and not self.canvas.pixmap.isNull():
+            resolution_str = f"({self.canvas.pixmap.width()}x{self.canvas.pixmap.height()})"
         filename = os.path.basename(image_path)
-        self.image_name_label.setText(filename)
+        self.image_name_label.setText(f"{filename}{resolution_str}")
 
         # Load annotations for this image
         self.coco_data = load_coco()
         self.canvas.set_category_cache(self.coco_data)
-        image_id = self._get_image_id(filename)
+        image_id = self._get_image_id(image_path)
         annotations = []
         if image_id is not None:
             for ann in self.coco_data.get('annotations', []):
@@ -1066,11 +1073,9 @@ class MarkUpWindow(BaseWindow):
         self.canvas.set_annotations(annotations)
         self._update_nav_buttons()
 
-    def _get_image_id(self, filename):
-        for img in self.coco_data.get('images', []):
-            if img['file_name'] == filename:
-                return img['id']
-        return None
+    def _get_image_id(self, image_path):
+        image_entry = get_image_entry_for_path(self.coco_data, image_path)
+        return image_entry['id'] if image_entry is not None else None
 
     def _get_category_name(self, cat_id):
         for cat in self.coco_data.get('categories', []):
@@ -1104,7 +1109,7 @@ class MarkUpWindow(BaseWindow):
                 f"border: 1px solid gray; border-radius: 2px;"
             )
         else:
-            self.color_label.setText("")
+            self.color_label.setText(text)
             self.color_swatch.setStyleSheet(
                 "background-color: transparent; border: 1px solid gray; border-radius: 2px;"
             )
@@ -1123,7 +1128,7 @@ class MarkUpWindow(BaseWindow):
         filename = os.path.basename(image_path)
         self.coco_data = load_coco()
 
-        image_id = self._get_image_id(filename)
+        image_id = self._get_image_id(image_path)
         if image_id is None:
             # Add image entry
             existing_ids = {img['id'] for img in self.coco_data.get('images', [])}

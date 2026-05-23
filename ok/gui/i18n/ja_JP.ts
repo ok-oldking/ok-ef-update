@@ -410,6 +410,18 @@
             <source>Cancel</source>
             <translation>キャンセル</translation>
         </message>
+        <message>
+            <source>Available Options</source>
+            <translation>利用可能なオプション</translation>
+        </message>
+        <message>
+            <source>Selected Options</source>
+            <translation>選択したオプション</translation>
+        </message>
+        <message>
+            <source>Click an option to add it.</source>
+            <translation>オプションをクリックして追加します。</translation>
+        </message>
     </context>
     <context>
         <name>ModifyListItem</name>
@@ -742,6 +754,14 @@
             <source>Can't start game, make sure the game is installed</source>
             <translation>ゲームを開始できません。ゲームがインストールされていることを確認してください。</translation>
         </message>
+        <message>
+            <source>NVIDIA/AMD filters or sharpening are enabled and may cause malfunctions!</source>
+            <translation>NVIDIA/AMD のフィルターまたはシャープ化が有効になっており、誤動作の原因になる可能性があります！</translation>
+        </message>
+        <message>
+            <source>GPU Driver Warning</source>
+            <translation>GPU ドライバー警告</translation>
+        </message>
     </context>
     <context>
         <name>StartLoadingDialog</name>
@@ -828,6 +848,14 @@
             <source>Capture</source>
             <translation>キャプチャ</translation>
         </message>
+        <message>
+            <source>Screenshot Folder</source>
+            <translation>スクリーンショットフォルダー</translation>
+        </message>
+        <message>
+            <source>Log Folder</source>
+            <translation>ログフォルダー</translation>
+        </message>
     </context>
     <context>
         <name>TaskButtons</name>
@@ -905,6 +933,10 @@
         <message>
             <source>Resume</source>
             <translation>再開</translation>
+        </message>
+        <message>
+            <source>Waiting for {task_name} task to be completed</source>
+            <translation>{task_name} タスクの完了を待機中</translation>
         </message>
     </context>
     <context>
@@ -2565,21 +2597,6 @@
         <message>
             <source>NPU inferring Error, you might need to update the Intel NPU driver!</source>
             <translation>NPU推論エラー。Intel NPUドライバーを更新する必要があるかもしれません。</translation>
-        </message>
-    </context>
-    <context>
-        <name>LabelAndButtonList</name>
-        <message>
-            <source>Delete Last Item</source>
-            <translation>最後の項目を削除</translation>
-        </message>
-        <message>
-            <source>(empty)</source>
-            <translation>（空）</translation>
-        </message>
-        <message>
-            <source>Reset</source>
-            <translation>リセット</translation>
         </message>
     </context>
 </TS>
