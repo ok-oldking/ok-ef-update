@@ -1,6 +1,6 @@
 import re
 from src.tasks.BaseEfTask import BaseEfTask
-
+from src.data.FeatureList import FeatureList as fL
 
 class MapMixin(BaseEfTask):
     def task_to_transfer_point(self, test_target_box=None, search_box_resolver=None):
@@ -66,12 +66,12 @@ class MapMixin(BaseEfTask):
     def clear_icon_in_map(self, need_reserve_icon_name=None):
         # 打开“标记显示管理”
         if not self.wait_click_ocr(
-                match="标记显示管理", box=self.box.bottom_left, time_out=10, log=True, after_sleep=2
+                match=self.lang.map_mixin.k_3da67d44, box=self.box.bottom_left, time_out=10, log=True, after_sleep=2
         ):
             return False
 
         # 点击“清空选中”，避免地图筛选导致传送点不显示
-        if not self.wait_click_ocr(match="清空选中", box=self.box.bottom_left, time_out=10, log=True, after_sleep=0.5):
+        if not self.wait_click_ocr(match=self.lang.map_mixin.k_5d879e98, box=self.box.bottom_left, time_out=10, log=True, after_sleep=0.5):
             return False
         for _ in range(2):
             # 如果需要保留特定图标，则点击保留图标
@@ -138,11 +138,10 @@ class MapMixin(BaseEfTask):
         self.click(result, after_sleep=2)
 
         # 查找“传送”按钮
-        result = self.wait_ocr(
-            match="传送",
-            box=self.box.bottom_right,
+        result = self.wait_feature(
+            feature=fL.transfer_go,
             time_out=10,
-            log=True
+            raise_if_not_found=False
         )
 
         # 如果未找到传送按钮
