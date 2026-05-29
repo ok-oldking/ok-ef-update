@@ -6,7 +6,7 @@ from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 from src.tasks.daily.finally_file import decode
 
-version = "v0.3.0"
+version = "v0.3.1"
 
 
 # 不需要修改version, Github Action打包会自动修改
@@ -142,7 +142,7 @@ config = {
         ["src.tasks.DeliveryTask", "DeliveryTask"],
         ["src.tasks.EssenceScanTask", "EssenceScanTask"],
         ["src.tasks.BattleTask", "BattleTask"],
-        ["src.tasks.PeriodicScreenshotTask", "PeriodicScreenshotTask"],
+        ["src.tasks.YingTuoTask", "YingTuoTask"],
         ["src.tasks.TestStartGame", "TestStartGame"],
         ["src.tasks.Test", "Test"],
         ["src.tasks.RealtimeDetectTask", "RealtimeDetectTask"],
