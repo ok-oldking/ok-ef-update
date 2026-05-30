@@ -11,6 +11,7 @@ from src.data.world_map_utils import get_world_map_matcher, get_world_map_text
 from src.essence.essence_recognizer import EssenceInfo, read_essence_info
 from src.image.login_screenshot import capture_window_by_screen
 from src.interaction.Mouse import run_at_window_pos
+from src.data.FeatureList import FeatureList as fL
 
 
 class GameFlowMixin:
@@ -111,20 +112,24 @@ class GameFlowMixin:
         """点击对话框中的确认按钮。"""
         start_time = time.time()
         while True:
-            if time.time() - start_time > time_out:
-                self.log_info("点击确认超时")
-                return False
+            self.next_frame()
             confirm = self.find_confirm()
             if confirm:
                 self.click(confirm, after_sleep=after_sleep)
+
                 if recheck_time > 0:
                     self.sleep(recheck_time)
+
                     if confirm := self.find_confirm():
                         self.click(confirm, after_sleep=after_sleep)
-                        return True
+
                 return True
+            # 超时检测
+            if time.time() - start_time > time_out:
+                self.log_info("点击确认超时")
+                return False
+
             self.sleep(0.1)
-            self.next_frame()
 
     def wait_pop_up(self, time_out=15, after_sleep=0):
         """等待奖励弹窗出现并点击 OK 按钮。"""
@@ -220,36 +225,75 @@ class GameFlowMixin:
 
     def is_main(self, esc=False, need_active=True):
         """判断是否处于可执行任务的主界面状态。"""
+
         self.next_frame()
-        if not self._logged_in:
-            if need_active:
-                self.active_and_send_mouse_delta(activate=True, only_activate=True)
+
+        if not self._logged_in and need_active:
+            self.active_and_send_mouse_delta(activate=True, only_activate=True)
+
+        # 已进入世界
         if self.wait_until(self.in_world, time_out=1):
             self._logged_in = True
             return True
+
+        # 登录流程处理成功
         if self.wait_login():
             return True
-        if self.click_confirm(time_out=1):
+
+        # 某些弹窗状态不视为主界面
+        if result := (
+            self.find_one(
+                feature_name=fL.skip_dialog_confirm,
+                horizontal_variance=0.05,
+                vertical_variance=0.05
+            )
+            or self.find_one(
+                feature_name=fL.to_max_produce_num,
+                box=self.box_of_screen(0.550, 0.885, 0.573, 0.920)
+            )
+        ):
+            self.log_info("检测到特定弹窗，尝试点击确认")
+            self.click(result, after_sleep=self.once_sleep_time)
             return False
-        rules = [[None, None, [self.lang.game_flow_mixin.k_8b2ca27a, self.lang.game_flow_mixin.k_7cd2e0c0, self.lang.game_flow_mixin.k_b56d9ac6], self.box.bottom]]
-        if not self.run_ocr_rules(rules):
+
+        # 命中 OCR 干扰并进行了处理，当前不视为稳定主界面
+        rules = [[
+            None,
+            None,
+            [self.lang.game_flow_mixin.k_8b2ca27a, self.lang.game_flow_mixin.k_7cd2e0c0],
+            self.box.bottom
+        ]]
+
+        if self.handle_ocr_rules(rules):
             return False
+
         if esc:
             self.back(after_sleep=self.once_sleep_time)
-            return False
+
         return False
 
-    def run_ocr_rules(self, rules: list[list]) -> bool:
-        for need, need_box, match, box in rules:
-            if need is not None:
-                if not self.ocr(match=need, box=need_box, log=True):
-                    continue
 
+    def handle_ocr_rules(self, rules: list[list]) -> bool:
+        """
+        OCR 规则处理。
+
+        Returns:
+            True: 命中规则并已处理
+            False: 未命中任何规则
+        """
+
+        for need, need_box, match, box in rules:
+
+            # 前置条件检测
+            if need is not None and not self.ocr(match=need, box=need_box, log=True):
+                continue
+
+            # 命中目标
             if result := self.ocr(match=match, box=box, log=True):
                 self.click_with_alt(result, after_sleep=self.once_sleep_time)
-                return False
+                return True
 
-        return True
+        return False
 
     def enter_home_room_list(self, timeout=6):
         """进入基地房间列表页面（i 面板）。"""
@@ -343,16 +387,16 @@ class GameFlowMixin:
                                     time_out=5)
                 return True
 
-    def ensure_map(self, addtional_match=None, time_out=30):
+    def ensure_map(self, addtional_feature=None, time_out=30):
         """确保进入地图界面。"""
         start_time = time.time()
-        if addtional_match:
-            match = [self.lang.game_flow_mixin.k_d3ade189] + addtional_match if isinstance(addtional_match, list) else [
-                self.lang.game_flow_mixin.k_d3ade189, re.compile(addtional_match)]
+        if addtional_feature:
+            features = [fL.in_map] + addtional_feature if isinstance(addtional_feature, list) else [
+                fL.in_map, addtional_feature]
         else:
-            match = [self.lang.game_flow_mixin.k_d3ade189]
+            features = [fL.in_map]
         self.press_key("m")
-        while not self.wait_ocr(match=match, time_out=2, box=self.box.top_left):
+        while not self.wait_feature(feature=features, time_out=2, raise_if_not_found=False):
             if time.time() - start_time > time_out:
                 raise Exception("进入地图失败")
             self.press_key("m")
