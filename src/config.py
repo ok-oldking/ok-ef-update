@@ -6,7 +6,7 @@ from src.interaction.EfInteraction import EfInteraction
 from src.interaction.KeyConfig import DEFAULT_COMMON_KEYS, DEFAULT_INDUSTRY_KEYS, DEFAULT_COMBAT_KEYS
 from src.tasks.daily.finally_file import decode
 
-version = "v0.3.11"
+version = "v0.3.12"
 
 
 # 不需要修改version, Github Action打包会自动修改
